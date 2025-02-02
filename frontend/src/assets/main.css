@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Remove the max-width and padding constraints */
+#app {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+}
+
+/* Remove the media queries that affect layout */
+body {
+  margin: 0;
+  padding: 0;
+}
