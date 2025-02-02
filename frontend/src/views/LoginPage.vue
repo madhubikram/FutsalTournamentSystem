@@ -13,15 +13,16 @@
 
         <form @submit.prevent="handleSubmit" class="space-y-6">
           <div class="space-y-2">
-            <label for="email" class="block text-green-100 font-medium">User Name</label>
+            <label for="username" class="block text-green-100 font-medium">Username</label>
             <input 
-              type="email" 
-              id="email"
-              v-model="formData.email"
+              type="text" 
+              id="username"
+              v-model="formData.username"
               class="w-full px-4 py-3 bg-white/10 border border-green-400/30 rounded-xl 
                      focus:ring-2 focus:ring-green-400 focus:outline-none 
                      text-white placeholder-green-200/50"
               placeholder="Enter your username"
+              required
             >
           </div>
 
@@ -35,6 +36,7 @@
                      focus:ring-2 focus:ring-green-400 focus:outline-none 
                      text-white placeholder-green-200/50"
               placeholder="Enter your password"
+              required
             >
           </div>
 
@@ -81,7 +83,7 @@
 import { ref } from 'vue'
 
 const formData = ref({
-  email: '',
+  username: '',
   password: '',
   remember: false
 })
