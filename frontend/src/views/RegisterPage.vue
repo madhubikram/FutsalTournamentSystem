@@ -279,7 +279,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const fileInput = ref(null)
 const selectedFiles = ref([])
 const errors = ref({})
@@ -402,28 +404,43 @@ const viewFile = (file) => {
   URL.revokeObjectURL(fileURL)
 }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!validateForm()) {
     console.log('Form validation failed:', errors.value)
     return
   }
 
-  const submitData = new FormData()
-  
-  // Add all form fields
-  Object.keys(formData.value).forEach(key => {
-    submitData.append(key, formData.value[key])
-  })
-  
-  // Add files if any
-  selectedFiles.value.forEach(file => {
-    submitData.append('documents', file)
-  })
+  try {
+    const response = await fetch('http://localhost:5000/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        firstName: formData.value.firstName,
+        lastName: formData.value.lastName,
+        username: formData.value.username,
+        email: formData.value.email,
+        password: formData.value.password,
+        contactNumber: formData.value.contactNumber,
+        role: formData.value.role,
+        panNumber: formData.value.role === 'futsalAdmin' ? formData.value.panNumber : undefined
+      })
+    });
 
-  console.log('Registration form submitted:', {
-    ...formData.value,
-    files: selectedFiles.value
-  })
-  // Add your API call here
+    const data = await response.json();
+
+    if (response.ok) {
+      console.log('Registration successful:', data);
+      // Redirect to login page after successful registration
+      router.push('/login');
+    } else {
+      console.error('Registration failed:', data.message);
+      errors.value.submit = data.message;
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    errors.value.submit = 'Registration failed. Please try again.';
+  }
 }
 </script>

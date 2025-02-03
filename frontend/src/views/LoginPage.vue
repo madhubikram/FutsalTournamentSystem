@@ -81,6 +81,8 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router';
+const router = useRouter();
 
 const formData = ref({
   username: '',
@@ -88,7 +90,37 @@ const formData = ref({
   remember: false
 })
 
-const handleSubmit = () => {
-  console.log('Form submitted:', formData.value)
-}
+const handleSubmit = async () => {
+  try {
+    const response = await fetch('http://localhost:5000/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: formData.value.username,
+        password: formData.value.password
+      })
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      // Store auth data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userRole', data.user.role);
+      
+      if (data.user.role === 'player') {
+        router.push('/home');
+      } else {
+        // Add route for futsal admin dashboard later
+        console.log('Futsal admin login - dashboard coming soon');
+      }
+    } else {
+      console.error('Login failed:', data.message);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
+};
 </script>
