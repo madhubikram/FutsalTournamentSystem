@@ -100,23 +100,44 @@
             </div>
           </div>
 
-          <!-- Contact Number -->
-          <div>
-            <label for="contactNumber" class="block text-green-100 text-xs font-medium">Contact Number</label>
-            <input 
-              type="tel" 
-              id="contactNumber"
-              v-model="formData.contactNumber"
-              @keydown="onlyNumbers"
-              class="w-full px-3 py-1 bg-white/10 border border-green-400/30 rounded-lg 
-                     focus:ring-1 focus:ring-green-400 focus:outline-none 
-                     text-white text-sm placeholder-green-200/50"
-              placeholder="Contact number"
-              required
-            >
-            <span v-if="errors.contactNumber" class="text-red-400 text-xs block mt-1">
-              {{ errors.contactNumber }}
-            </span>
+         <!-- Contact Number -->
+          <div :class="formData.role === 'futsalAdmin' ? 'grid grid-cols-2 gap-2' : ''">
+            <div :class="formData.role === 'futsalAdmin' ? '' : 'w-full'">
+              <label for="contactNumber" class="block text-green-100 text-xs font-medium">Contact Number</label>
+              <input 
+                type="tel" 
+                id="contactNumber"
+                v-model="formData.contactNumber"
+                @keydown="onlyNumbers"
+                class="w-full px-3 py-1 bg-white/10 border border-green-400/30 rounded-lg 
+                      focus:ring-1 focus:ring-green-400 focus:outline-none 
+                      text-white text-sm placeholder-green-200/50"
+                placeholder="Contact number"
+                required
+              >
+              <span v-if="errors.contactNumber" class="text-red-400 text-xs block mt-1">
+                {{ errors.contactNumber }}
+              </span>
+            </div>
+
+            <!-- PAN Number - Only shows if role is futsalAdmin -->
+            <div v-if="formData.role === 'futsalAdmin'">
+              <label for="panNumber" class="block text-green-100 text-xs font-medium">PAN Number</label>
+              <input 
+                type="text" 
+                id="panNumber"
+                v-model="formData.panNumber"
+                @keydown="onlyNumbers"
+                class="w-full px-3 py-1 bg-white/10 border border-green-400/30 rounded-lg 
+                      focus:ring-1 focus:ring-green-400 focus:outline-none 
+                      text-white text-sm placeholder-green-200/50"
+                placeholder="Enter PAN number"
+                required
+              >
+              <span v-if="errors.panNumber" class="text-red-400 text-xs block mt-1">
+                {{ errors.panNumber }}
+              </span>
+            </div>
           </div>
 
           <!-- Email -->
@@ -175,81 +196,86 @@
 
           <!-- Conditional fields for Futsal Admin -->
           <template v-if="formData.role === 'futsalAdmin'">
-            <!-- PAN Number -->
             <div>
-              <label for="panNumber" class="block text-green-100 text-xs font-medium">PAN Number</label>
+              <label for="futsalName" class="block text-green-100 text-xs font-medium">Futsal Name</label>
               <input 
                 type="text" 
-                id="panNumber"
-                v-model="formData.panNumber"
-                @keydown="onlyNumbers"
+                id="futsalName"
+                v-model="formData.futsalName"
                 class="w-full px-3 py-1 bg-white/10 border border-green-400/30 rounded-lg 
-                       focus:ring-1 focus:ring-green-400 focus:outline-none 
-                       text-white text-sm placeholder-green-200/50"
-                placeholder="Enter PAN number"
+                      focus:ring-1 focus:ring-green-400 focus:outline-none 
+                      text-white text-sm placeholder-green-200/50"
+                placeholder="Enter futsal name"
                 required
               >
-              <span v-if="errors.panNumber" class="text-red-400 text-xs block mt-1">
-                {{ errors.panNumber }}
+              <span v-if="errors.futsalName" class="text-red-400 text-xs block mt-1">
+                {{ errors.futsalName }}
               </span>
             </div>
 
             <!-- Document Upload -->
+           <!-- Document Upload -->
             <div>
-              <label class="block text-green-100 text-xs font-medium mb-1">Legal Documents</label>
-              <div 
-                class="w-full h-20 border-2 border-dashed border-green-400/30 rounded-lg 
-                       flex flex-col items-center justify-center cursor-pointer
-                       hover:border-green-400/50 transition-colors duration-200"
-                @dragover.prevent
-                @drop.prevent="handleDrop"
-                @click="$refs.fileInput.click()"
-              >
-                <input 
-                  type="file" 
-                  ref="fileInput" 
-                  class="hidden" 
-                  @change="handleFileChange"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  multiple
+                <label class="block text-green-100 text-xs font-medium mb-1">Legal Documents</label>
+                <div 
+                    class="w-full h-20 border-2 border-dashed border-green-400/30 rounded-lg 
+                          flex flex-col items-center justify-center cursor-pointer
+                          hover:border-green-400/50 transition-colors duration-200"
+                    @dragover.prevent
+                    @drop.prevent="handleDrop"
+                    @click.prevent="triggerFileInput"
                 >
-                <div class="text-center p-2">
-                  <p class="text-green-100 text-sm mb-1">
-                    {{ displayFileName || 'Drag and drop or click to upload' }}
-                  </p>
-                  <p class="text-green-200/50 text-xs">
-                    Supported formats: PDF, JPG, PNG
-                  </p>
+                    <input 
+                        type="file" 
+                        ref="fileInput" 
+                        class="hidden" 
+                        @change="handleFileChange"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        multiple
+                    >
+                    <div class="text-center p-2">
+                        <p class="text-green-100 text-sm mb-1">
+                            {{ displayFileName || 'Drag and drop or click to upload' }}
+                        </p>
+                        <p class="text-green-200/50 text-xs">
+                            Supported formats: PDF, JPG, PNG
+                        </p>
+                    </div>
                 </div>
-              </div>
-              <!-- Display selected files -->
-              <div v-if="selectedFiles.length > 0" class="mt-2">
-                <p class="text-green-100 text-xs font-medium mb-1">Selected files:</p>
-                <ul class="text-green-200 text-xs space-y-1">
-                  <li v-for="(file, index) in selectedFiles" :key="index" 
-                      class="flex items-center justify-between">
-                    <button 
-                      @click="viewFile(file)"
-                      class="text-green-300 hover:text-green-200 cursor-pointer"
-                    >
-                      {{ file.name }}
-                    </button>
-                    <button 
-                      @click="removeFile(index)"
-                      class="text-red-400 hover:text-red-300 ml-2"
-                    >
-                      ×
-                    </button>
-                  </li>
-                </ul>
-              </div>
-              <span v-if="errors.documents" class="text-red-400 text-xs block mt-1">
-                {{ errors.documents }}
-              </span>
+                
+                <!-- Display selected files -->
+                <div v-if="selectedFiles.length > 0" class="mt-2">
+                    <p class="text-green-100 text-xs font-medium mb-1">Selected files:</p>
+                    <ul class="text-green-200 text-xs space-y-1">
+                        <li v-for="(file, index) in selectedFiles" :key="index" 
+                            class="flex items-center justify-between">
+                            <button 
+                                type="button"
+                                @click="viewFile(file)"
+                                class="text-green-300 hover:text-green-200 cursor-pointer"
+                            >
+                                {{ file.name }}
+                            </button>
+                            <button 
+                                type="button"
+                                @click="removeFile(index)"
+                                class="text-red-400 hover:text-red-300 ml-2"
+                            >
+                                ×
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <span v-if="errors.documents" class="text-red-400 text-xs block mt-1">
+                    {{ errors.documents }}
+                </span>
             </div>
           </template>
 
           <!-- Submit Button -->
+          <div v-if="errors.submit" class="text-red-400 text-xs text-center">
+              {{ errors.submit }}
+          </div>
           <button 
             type="submit"
             class="w-full bg-gradient-to-r from-green-400 to-emerald-500 
@@ -296,6 +322,7 @@ const formData = ref({
   confirmPassword: '',
   role: '',
   panNumber: '',
+  futsalName: '',
 })
 
 const displayFileName = computed(() => {
@@ -320,6 +347,7 @@ const validateForm = () => {
     confirmPassword: 'Confirm Password',
     role: 'Role'
   }
+  
 
   Object.entries(requiredFields).forEach(([field, label]) => {
     if (!formData.value[field]) {
@@ -377,7 +405,9 @@ const onlyNumbers = (event) => {
         event.preventDefault()
   }
 }
-
+const triggerFileInput = () => {
+    fileInput.value.click();
+};
 const handleFileChange = (event) => {
   const newFiles = Array.from(event.target.files)
   selectedFiles.value = [...selectedFiles.value, ...newFiles]
@@ -394,61 +424,81 @@ const removeFile = (index) => {
 }
 
 const viewFile = (file) => {
-  // Create a URL for the file
-  const fileURL = URL.createObjectURL(file)
-  
-  // Open in new tab
-  window.open(fileURL, '_blank')
-  
-  // Clean up the URL object
-  URL.revokeObjectURL(fileURL)
-}
+    const fileURL = URL.createObjectURL(file);
+    window.open(fileURL, '_blank');
+    URL.revokeObjectURL(fileURL);
+};
 
 const handleSubmit = async () => {
-  if (!validateForm()) {
-    console.log('Form validation failed:', errors.value)
-    return
-  }
-
-  try {
-    // Create a new FormData object with a different name to avoid conflict
-    const submitData = new FormData()
-
-    // Now we can correctly access formData.value
-    submitData.append('firstName', formData.value.firstName)
-    submitData.append('lastName', formData.value.lastName)
-    submitData.append('username', formData.value.username)
-    submitData.append('email', formData.value.email)
-    submitData.append('password', formData.value.password)
-    submitData.append('contactNumber', formData.value.contactNumber)
-    submitData.append('role', formData.value.role)
-    
-    if (formData.value.role === 'futsalAdmin') {
-      submitData.append('panNumber', formData.value.panNumber)
+    console.log('Starting form submission...');
+    if (!validateForm()) {
+        console.log('Form validation failed:', errors.value);
+        return;
     }
 
-    // Add files
-    selectedFiles.value.forEach(file => {
-      submitData.append('documents', file)
-    })
+    try {
+        const submitData = new FormData();
+        
+        // Add all form fields explicitly
+        const fields = {
+            firstName: formData.value.firstName,
+            lastName: formData.value.lastName,
+            username: formData.value.username,
+            email: formData.value.email,
+            password: formData.value.password,
+            role: formData.value.role,
+            contactNumber: formData.value.contactNumber
+        };
 
-    const response = await fetch('http://localhost:5000/api/auth/register', {
-      method: 'POST',
-      body: submitData  // Use our renamed FormData object
-    })
+        // Log what we're sending
+        console.log('Form fields to be sent:', fields);
 
-    const data = await response.json()
+        // Append all fields
+        Object.entries(fields).forEach(([key, value]) => {
+            console.log(`Appending ${key}:`, value);
+            submitData.append(key, value);
+        });
 
-    if (response.ok) {
-      console.log('Registration successful:', data)
-      router.push('/login')
-    } else {
-      console.error('Registration failed:', data.message)
-      errors.value.submit = data.message
+        // Add futsal admin specific fields
+        if (formData.value.role === 'futsalAdmin') {
+            submitData.append('panNumber', formData.value.panNumber);
+            submitData.append('futsalName', formData.value.futsalName);
+            
+            // Add files
+            selectedFiles.value.forEach(file => {
+                submitData.append('documents', file);
+            });
+        }
+
+        // Log FormData entries
+        for (let pair of submitData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]); 
+        }
+
+        console.log('Sending request...');
+        const response = await fetch('http://localhost:5000/api/auth/register', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                // Remove Content-Type header as we're using FormData
+                // FormData sets its own Content-Type with boundary
+            },
+            body: submitData
+        });
+
+        const data = await response.json();
+        console.log('Server response:', data);
+
+        if (response.ok) {
+            console.log('Registration successful:', data);
+            router.push('/login');
+        } else {
+            console.error('Registration failed:', data);
+            errors.value.submit = data.message || 'Registration failed';
+        }
+    } catch (error) {
+        console.error('Submission error:', error);
+        errors.value.submit = 'Registration failed. Please try again.';
     }
-  } catch (error) {
-    console.error('Error:', error)
-    errors.value.submit = 'Registration failed. Please try again.'
-  }
-}
+};
 </script>

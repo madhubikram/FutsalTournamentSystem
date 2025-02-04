@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginPage from '../views/LoginPage.vue'
 import RegisterPage from '@/views/RegisterPage.vue'
 import HomePage from '@/views/HomePage.vue'
+import VerificationPendingPage from '@/views/VerificationPendingPage.vue'
+import SAdmin from '@/views/SAdmin.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,7 +28,21 @@ const router = createRouter({
       component: HomePage,
       meta: { 
         requiresAuth: true,
-        roles: ['player']  // Only allow players
+        roles: ['player']
+      }
+    },
+    {
+      path: '/verification-pending',
+      name: 'verificationPending',
+      component: VerificationPendingPage
+    },
+    {
+      path: '/super-admin',
+      name: 'superAdmin',
+      component: SAdmin,
+      meta: { 
+        requiresAuth: true,
+        roles: ['superAdmin']
       }
     }
   ]

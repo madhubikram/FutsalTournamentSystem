@@ -2,8 +2,14 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth.middleware');
 const User = require('../models/user.model');
-// We need to create this model next
 const Futsal = require('../models/futsal.model');
+
+console.log('Loading protected routes...');
+
+// Test route to verify router is working
+router.get('/test-protected', (req, res) => {
+    res.json({ message: 'Protected routes working' });
+});
 
 // Get user profile
 router.get('/profile', auth, async (req, res) => {
@@ -15,53 +21,63 @@ router.get('/profile', auth, async (req, res) => {
     }
 });
 
-// Create futsal
-router.post('/futsal/create', auth, async (req, res) => {
+// Get pending verifications
+router.get('/admin/pending-verifications', auth, async (req, res) => {
+    console.log('Hitting pending-verifications route');
+    console.log('User role:', req.user?.role);
+    
     try {
-        if (!req.user || req.user.role !== 'futsalAdmin') {
+        if (!req.user || req.user.role !== 'superAdmin') {
+            console.log('Access denied - User role not superAdmin');
             return res.status(403).json({ message: 'Access denied' });
         }
 
-        const { name, location, facilities, pricePerHour } = req.body;
+        const pendingAdmins = await User.find({ 
+            role: 'futsalAdmin',
+            verificationStatus: 'pending'
+        }).select('-password');
 
-        // Validation
-        if (!name || !location || !pricePerHour) {
-            return res.status(400).json({ message: 'Missing required fields' });
-        }
-
-        const newFutsal = new Futsal({
-            name,
-            location,
-            facilities,
-            pricePerHour,
-            owner: req.user._id
-        });
-
-        await newFutsal.save();
-        res.status(201).json({ message: 'Futsal created successfully', futsal: newFutsal });
+        console.log('Pending admins found:', pendingAdmins);
+        res.json({ admins: pendingAdmins });
     } catch (error) {
-        res.status(500).json({ message: 'Error creating futsal', error: error.message });
+        console.error('Error in pending-verifications:', error);
+        res.status(500).json({ message: 'Error fetching pending verifications' });
     }
 });
-
-// Get all futsals with filtering
-router.get('/futsals', async (req, res) => {
+  
+  // Verify admin
+  router.post('/admin/verify/:id', auth, async (req, res) => {
     try {
-        const { location, minPrice, maxPrice } = req.query;
-        let query = {};
-
-        if (location) query.location = new RegExp(location, 'i');
-        if (minPrice || maxPrice) {
-            query.pricePerHour = {};
-            if (minPrice) query.pricePerHour.$gte = minPrice;
-            if (maxPrice) query.pricePerHour.$lte = maxPrice;
-        }
-
-        const futsals = await Futsal.find(query).populate('owner', 'username');
-        res.json({ futsals });
+      if (req.user.role !== 'superAdmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+  
+      const { status } = req.body;
+      const adminId = req.params.id;
+  
+      if (status === 'approved') {
+        await User.findByIdAndUpdate(adminId, { verificationStatus: 'approved' });
+        // Send approval email
+      } else if (status === 'rejected') {
+        await User.findByIdAndUpdate(adminId, { verificationStatus: 'rejected' });
+        // Send rejection email
+      }
+  
+      res.json({ message: `Admin ${status} successfully` });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching futsals', error: error.message });
+      res.status(500).json({ message: 'Error updating verification status' });
     }
+  });
+
+  router.get('/test-auth', auth, (req, res) => {
+    res.json({
+        message: 'Auth working',
+        user: {
+            role: req.user.role,
+            id: req.user._id
+        }
+    });
 });
 
+console.log('Protected routes loaded');
 module.exports = router;

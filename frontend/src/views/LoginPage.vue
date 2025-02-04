@@ -65,6 +65,9 @@
             Sign In
           </button>
         </form>
+        <div v-if="errorMessage" class="mt-4 text-center">
+          <p class="text-red-400 text-sm">{{ errorMessage }}</p>
+        </div>
         <p class="text-center text-green-100">
           Don't have an account?
           <router-link 
@@ -82,8 +85,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router';
-const router = useRouter();
 
+const router = useRouter();
+const errorMessage = ref('');
 const formData = ref({
   username: '',
   password: '',
@@ -92,6 +96,7 @@ const formData = ref({
 
 const handleSubmit = async () => {
   try {
+    errorMessage.value = '';
     const response = await fetch('http://localhost:5000/api/auth/login', {
       method: 'POST',
       headers: {
@@ -110,17 +115,30 @@ const handleSubmit = async () => {
       localStorage.setItem('token', data.token);
       localStorage.setItem('userRole', data.user.role);
       
-      if (data.user.role === 'player') {
-        router.push('/home');
-      } else {
-        // Add route for futsal admin dashboard later
-        console.log('Futsal admin login - dashboard coming soon');
+      // Route based on role
+      switch(data.user.role) {
+        case 'superAdmin':
+          router.push('/super-admin');
+          break;
+        case 'player':
+          router.push('/home');
+          break;
+        case 'futsalAdmin':
+          if (data.user.verificationStatus === 'approved') {
+            router.push('/admin-dashboard');
+          } else {
+            router.push('/verification-pending');
+          }
+          break;
+        default:
+          errorMessage.value = 'Invalid user role';
       }
     } else {
-      console.error('Login failed:', data.message);
+      errorMessage.value = data.message || 'Invalid credentials';
     }
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Login Error:", error);
+    errorMessage.value = 'An error occurred. Please try again.';
   }
 };
 </script>
