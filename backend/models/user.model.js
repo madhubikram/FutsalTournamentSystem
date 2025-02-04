@@ -8,10 +8,24 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   contactNumber: { type: String, required: true },
-  role: { type: String, enum: ['player', 'futsalAdmin'], required: true },
+  role: { type: String, enum: ['player', 'futsalAdmin', 'superAdmin'], required: true },
   panNumber: { type: String, required: function() { return this.role === 'futsalAdmin'; } },
-  documents: [{ type: String }], // Array of document URLs
-  createdAt: { type: Date, default: Date.now }
+  documents: [{ type: String }],
+  createdAt: { type: Date, default: Date.now },
+  futsalName: { 
+    type: String, 
+    required: function() { 
+      return this.role === 'futsalAdmin'; 
+    }
+  },
+
+  verificationStatus: { 
+    type: String, 
+    enum: ['pending', 'approved', 'rejected'],
+    default: function() {
+      return this.role === 'futsalAdmin' ? 'pending' : 'approved'
+    }
+  }
 });
 
 // Hash password before saving
