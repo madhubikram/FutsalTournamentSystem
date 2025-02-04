@@ -411,36 +411,44 @@ const handleSubmit = async () => {
   }
 
   try {
+    // Create a new FormData object with a different name to avoid conflict
+    const submitData = new FormData()
+
+    // Now we can correctly access formData.value
+    submitData.append('firstName', formData.value.firstName)
+    submitData.append('lastName', formData.value.lastName)
+    submitData.append('username', formData.value.username)
+    submitData.append('email', formData.value.email)
+    submitData.append('password', formData.value.password)
+    submitData.append('contactNumber', formData.value.contactNumber)
+    submitData.append('role', formData.value.role)
+    
+    if (formData.value.role === 'futsalAdmin') {
+      submitData.append('panNumber', formData.value.panNumber)
+    }
+
+    // Add files
+    selectedFiles.value.forEach(file => {
+      submitData.append('documents', file)
+    })
+
     const response = await fetch('http://localhost:5000/api/auth/register', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        firstName: formData.value.firstName,
-        lastName: formData.value.lastName,
-        username: formData.value.username,
-        email: formData.value.email,
-        password: formData.value.password,
-        contactNumber: formData.value.contactNumber,
-        role: formData.value.role,
-        panNumber: formData.value.role === 'futsalAdmin' ? formData.value.panNumber : undefined
-      })
-    });
+      body: submitData  // Use our renamed FormData object
+    })
 
-    const data = await response.json();
+    const data = await response.json()
 
     if (response.ok) {
-      console.log('Registration successful:', data);
-      // Redirect to login page after successful registration
-      router.push('/login');
+      console.log('Registration successful:', data)
+      router.push('/login')
     } else {
-      console.error('Registration failed:', data.message);
-      errors.value.submit = data.message;
+      console.error('Registration failed:', data.message)
+      errors.value.submit = data.message
     }
   } catch (error) {
-    console.error('Error:', error);
-    errors.value.submit = 'Registration failed. Please try again.';
+    console.error('Error:', error)
+    errors.value.submit = 'Registration failed. Please try again.'
   }
 }
 </script>

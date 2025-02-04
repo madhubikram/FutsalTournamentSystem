@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
+const path = require('path');
 
 const app = express();
 
@@ -16,6 +17,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Only auth routes for now
 app.use('/api/auth', require('./routes/auth.routes'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
