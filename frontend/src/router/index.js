@@ -4,6 +4,7 @@ import RegisterPage from '@/views/RegisterPage.vue'
 import HomePage from '@/views/HomePage.vue'
 import VerificationPendingPage from '@/views/VerificationPendingPage.vue'
 import SAdmin from '@/views/SAdmin.vue'
+import ProfileCompletion from '@/views/ProfileCompletion.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -43,6 +44,15 @@ const router = createRouter({
       meta: { 
         requiresAuth: true,
         roles: ['superAdmin']
+      }
+    },
+    {
+      path: '/futsal-admin/profile-completion',
+      name: 'futsalProfileCompletion',
+      component: ProfileCompletion,
+      meta: {
+        requiresAuth: true,
+        roles: ['futsalAdmin']
       }
     }
   ]
