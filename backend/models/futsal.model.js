@@ -1,20 +1,29 @@
-const mongoose = require('mongoose');
+// models/futsal.model.js
+const mongoose = require('mongoose');  // Add this line
 
 const futsalSchema = new mongoose.Schema({
     name: { 
         type: String, 
         required: true 
     },
+    description: {
+        type: String,
+        required: true
+    },
     location: { 
         type: String, 
         required: true 
+    },
+    coordinates: {
+        lat: { type: Number, required: true },
+        lng: { type: Number, required: true }
     },
     facilities: [{ 
         type: String 
     }],
     pricePerHour: { 
         type: Number, 
-        required: true 
+        default: 0
     },
     owner: { 
         type: mongoose.Schema.Types.ObjectId, 
@@ -39,11 +48,9 @@ const futsalSchema = new mongoose.Schema({
     }],
     images: [{ 
         type: String 
-    }],
-    createdAt: { 
-        type: Date, 
-        default: Date.now 
-    }
+    }]
+}, {
+    timestamps: true
 });
 
 module.exports = mongoose.model('Futsal', futsalSchema);

@@ -4,86 +4,97 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-};
-require('dotenv').config();
-
-console.log('Starting server...');
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
 const protectedRoutes = require('./routes/protected.routes');
-console.log('Routes imported');
+const futsalRoutes = require('./routes/futsal.routes');
+const courtRoutes = require('./routes/court.routes');
+
+require('dotenv').config();
+
+console.log('Starting server...');
+
+// Create uploads directories if they don't exist
+const uploadDir = path.join(__dirname, 'uploads');
+const courtsUploadsDir = path.join(uploadDir, 'courts');
+
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+if (!fs.existsSync(courtsUploadsDir)) {
+    fs.mkdirSync(courtsUploadsDir, { recursive: true });
+}
 
 const app = express();
 
-// Middleware
+// Security Middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // Your frontend URL
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
-
-// Debug middleware to log all requests
-app.use((req, res, next) => {
-    console.log(`${req.method} ${req.path}`);
-    next();
-});
-
-// Serve static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
+// Body Parser Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// Debug middleware in development only
+if (process.env.NODE_ENV !== 'production') {
+    app.use((req, res, next) => {
+        console.log(`${req.method} ${req.path}`, req.body);
+        next();
+    });
+}
+
+// Static file serving
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// API Routes
+app.use('/api/courts', courtRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/futsal', futsalRoutes);
 app.use('/api', protectedRoutes);
 
-// Test route
-app.get('/test', (req, res) => {
-    console.log('Test route hit');
-    res.json({ message: 'API working' });
-});
-
-// Debug route to list all registered routes
-app.get('/debug/routes', (req, res) => {
-    const routes = [];
-    app._router.stack.forEach(middleware => {
-        if(middleware.route){ 
-            routes.push(middleware.route.path);
-        } else if(middleware.name === 'router'){ 
-            middleware.handle.stack.forEach(handler => {
-                if(handler.route){
-                    routes.push(handler.route.path);
-                }
-            });
-        }
+// Test Routes (development only)
+if (process.env.NODE_ENV !== 'production') {
+    app.get('/test', (req, res) => {
+        res.json({ message: 'API working' });
     });
-    res.json(routes);
-});
 
-// Add this after your routes
+    app.get('/debug/routes', (req, res) => {
+        const routes = [];
+        app._router.stack.forEach(middleware => {
+            if(middleware.route){ 
+                routes.push(middleware.route.path);
+            } else if(middleware.name === 'router'){ 
+                middleware.handle.stack.forEach(handler => {
+                    if(handler.route){
+                        routes.push(handler.route.path);
+                    }
+                });
+            }
+        });
+        res.json(routes);
+    });
+}
+
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-      message: 'Internal server error',
-      error: err.message
-  });
+    console.error('Error:', err);
+    res.status(500).json({
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    });
 });
-
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('Connected to MongoDB'))
     .catch((err) => console.error('MongoDB connection error:', err));
 
+// Monitor pending admin registrations
 mongoose.connection.on('connected', async () => {
     try {
         const User = require('./models/user.model');
@@ -91,7 +102,7 @@ mongoose.connection.on('connected', async () => {
             role: 'futsalAdmin',
             verificationStatus: 'pending'
         });
-        console.log('Current pending admins:', pendingAdmins);
+        console.log('Current pending admins:', pendingAdmins.length);
     } catch (err) {
         console.error('Error checking pending admins:', err);
     }
@@ -100,5 +111,7 @@ mongoose.connection.on('connected', async () => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    console.log(`Debug routes available at: http://localhost:${PORT}/debug/routes`);
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`Debug routes available at: http://localhost:${PORT}/debug/routes`);
+    }
 });

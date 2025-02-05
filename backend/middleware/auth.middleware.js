@@ -22,11 +22,18 @@ const authMiddleware = async (req, res, next) => {
     }
 
     // Find user
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId).populate('futsal');
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
 
+    // Add check for futsal admin without futsal
+    if (user.role === 'futsalAdmin' && !user.futsal && 
+      req.path !== '/profile') { // Allow profile completion route
+    return res.status(400).json({ 
+      message: 'Futsal profile not found. Please complete your profile setup.' 
+    });
+  }
     // Attach user and token to request
     req.user = user;
     req.token = token;

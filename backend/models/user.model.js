@@ -25,7 +25,15 @@ const userSchema = new mongoose.Schema({
     default: function() {
       return this.role === 'futsalAdmin' ? 'pending' : 'approved'
     }
-  }
+  },
+  profileCompleted: {
+    type: Boolean,
+    default: false
+},
+futsal: { 
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Futsal'
+}
 });
 
 // Hash password before saving

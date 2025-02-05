@@ -54,23 +54,62 @@ const router = createRouter({
         requiresAuth: true,
         roles: ['futsalAdmin']
       }
+    },
+    {
+      path: '/admin-dashboard',
+      name: 'adminDashboard',
+      component: () => import('@/views/AdminDashboard.vue'),
+      meta: {
+        requiresAuth: true,
+        roles: ['futsalAdmin'],
+        requiresProfileCompletion: true
+      }
+    },
+    {
+      path: '/admin-courts',
+      name: 'adminCourts',
+      component: () => import('@/views/AdminCourts.vue'),
+      meta: {
+        requiresAuth: true,
+        roles: ['futsalAdmin']
+      }
     }
   ]
 })
 
 // Navigation guard for auth and role checking
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = localStorage.getItem('token') 
-  const userRole = localStorage.getItem('userRole') 
+  const isAuthenticated = localStorage.getItem('token')
+  const userRole = localStorage.getItem('userRole')
+  const profileCompleted = localStorage.getItem('profileCompleted') === 'true'
 
+  // First check authentication
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login')
-  } else if (to.meta.roles && !to.meta.roles.includes(userRole)) {
-    // If user's role doesn't match required roles
-    next('/login')
-  } else {
-    next()
+    return
   }
+
+  // Check role permissions
+  if (to.meta.roles && !to.meta.roles.includes(userRole)) {
+    next('/login')
+    return
+  }
+
+  // Handle futsal admin profile completion
+  if (userRole === 'futsalAdmin' && !profileCompleted) {
+    // Allow access to profile completion page
+    if (to.name === 'futsalProfileCompletion') {
+      next()
+      return
+    }
+    // Redirect to profile completion if trying to access other pages
+    if (to.meta.requiresAuth) {
+      next('/futsal-admin/profile-completion')
+      return
+    }
+  }
+
+  next()
 })
 
 export default router

@@ -163,7 +163,8 @@ const login = async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
-        verificationStatus: user.verificationStatus
+        verificationStatus: user.verificationStatus,
+        profileCompleted: user.profileCompleted
       }
     });
   } catch (error) {

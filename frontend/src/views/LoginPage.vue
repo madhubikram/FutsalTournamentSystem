@@ -111,29 +111,34 @@ const handleSubmit = async () => {
     const data = await response.json();
     
     if (response.ok) {
-      // Store auth data
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('userRole', data.user.role);
-      
-      // Route based on role
-      switch(data.user.role) {
-        case 'superAdmin':
-          router.push('/super-admin');
-          break;
-        case 'player':
-          router.push('/home');
-          break;
+  // Store auth data
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('userRole', data.user.role);
+    localStorage.setItem('profileCompleted', data.user.profileCompleted);
+    
+    // Route based on role
+    switch(data.user.role) {
+      case 'superAdmin':
+        router.push('/super-admin');
+        break;
+      case 'player':
+        router.push('/home');
+        break;
         case 'futsalAdmin':
-          if (data.user.verificationStatus === 'approved') {
-            router.push('/admin-dashboard');
-          } else {
-            router.push('/verification-pending');
-          }
-          break;
-        default:
-          errorMessage.value = 'Invalid user role';
+      if (data.user.verificationStatus === 'approved') {
+        if (!data.user.profileCompleted) { 
+          router.push('/futsal-admin/profile-completion');
+        } else {
+          router.push('/admin-dashboard');
+        }
+      } else {
+        router.push('/verification-pending');
       }
-    } else {
+      break;
+    default:
+      errorMessage.value = 'Invalid user role';
+  }
+} else {
       errorMessage.value = data.message || 'Invalid credentials';
     }
   } catch (error) {
