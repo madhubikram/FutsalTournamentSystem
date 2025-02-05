@@ -3,6 +3,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+};
 require('dotenv').config();
 
 console.log('Starting server...');
@@ -71,6 +76,8 @@ app.use((err, req, res, next) => {
       error: err.message
   });
 });
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)

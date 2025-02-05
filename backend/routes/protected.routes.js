@@ -23,26 +23,40 @@ router.get('/profile', auth, async (req, res) => {
 
 // Get pending verifications
 router.get('/admin/pending-verifications', auth, async (req, res) => {
-    console.log('Hitting pending-verifications route');
-    console.log('User role:', req.user?.role);
-    
-    try {
-        if (!req.user || req.user.role !== 'superAdmin') {
-            console.log('Access denied - User role not superAdmin');
-            return res.status(403).json({ message: 'Access denied' });
-        }
+  console.log('Hitting pending-verifications route');
+  console.log('User role:', req.user?.role);
+  
+  try {
+      if (!req.user || req.user.role !== 'superAdmin') {
+          console.log('Access denied - User role not superAdmin');
+          return res.status(403).json({ message: 'Access denied' });
+      }
 
-        const pendingAdmins = await User.find({ 
-            role: 'futsalAdmin',
-            verificationStatus: 'pending'
-        }).select('-password');
+      const pendingAdmins = await User.find({ 
+          role: 'futsalAdmin',
+          verificationStatus: 'pending'
+      }).select('-password');
 
-        console.log('Pending admins found:', pendingAdmins);
-        res.json({ admins: pendingAdmins });
-    } catch (error) {
-        console.error('Error in pending-verifications:', error);
-        res.status(500).json({ message: 'Error fetching pending verifications' });
-    }
+      // Transform document URLs to include full server URL
+      const transformedAdmins = pendingAdmins.map(admin => {
+          const adminObj = admin.toObject();
+          if (adminObj.documents && adminObj.documents.length > 0) {
+              adminObj.documents = adminObj.documents.map(doc => {
+                  // If doc already starts with http, return as is
+                  if (doc.startsWith('http')) return doc;
+                  // Otherwise, prepend server URL
+                  return `http://localhost:5000${doc}`;
+              });
+          }
+          return adminObj;
+      });
+
+      console.log('Transformed admins:', transformedAdmins);
+      res.json({ admins: transformedAdmins });
+  } catch (error) {
+      console.error('Error in pending-verifications:', error);
+      res.status(500).json({ message: 'Error fetching pending verifications' });
+  }
 });
   
   // Verify admin
