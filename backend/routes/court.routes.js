@@ -30,12 +30,18 @@ const upload = multer({
 // Get all courts for the futsal
 router.get('/', auth, async (req, res) => {
     try {
-        const courts = await Court.find({ futsalId: req.user.futsalId });
-        res.json(courts);
+        console.log('User making request:', req.user) // Log user
+        console.log('User futsal:', req.user.futsal) // Log futsal ID
+        
+        const courts = await Court.find({ futsalId: req.user.futsal })
+        console.log('Found courts:', courts) // Log found courts
+        
+        res.json(courts)
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error in GET courts:', error)
+        res.status(500).json({ message: error.message })
     }
-});
+})
 
 // Create a new court
 router.post('/', auth, upload.array('images', 5), async (req, res) => {

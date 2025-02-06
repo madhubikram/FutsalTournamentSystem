@@ -31,73 +31,13 @@
           </div>
           
           <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <div v-for="court in courts" :key="court._id" 
-                 class="bg-gray-800 rounded-xl overflow-hidden border border-gray-700">
-              <div class="relative">
-                <span :class="{
-                  'absolute top-4 right-4 px-4 py-1 rounded-full text-sm font-medium': true,
-                  'bg-green-500/20 text-green-500': court.status === 'Active',
-                  'bg-yellow-500/20 text-yellow-500': court.status === 'Maintenance',
-                  'bg-red-500/20 text-red-500': court.status === 'Inactive'
-                }">
-                  {{ court.status }}
-                </span>
-                
-                <img 
-                  :src="court.images[0] || '/placeholder-court.jpg'" 
-                  alt="Court"
-                  class="w-full h-48 object-cover"
-                >
-              </div>
-
-              <div class="p-4">
-                <h3 class="text-lg font-semibold text-white mb-2">{{ court.name }}</h3>
-                
-                <div class="space-y-2 text-sm text-gray-400">
-                  <p>Dimensions: {{ court.dimensions }}</p>
-                  <p>Surface: {{ court.surfaceType }}</p>
-                  <p>Type: {{ court.courtType }}</p>
-                  <p class="text-green-400">Price: Rs {{ court.priceHourly }}/hr</p>
-                  
-                  <!-- Facilities -->
-                  <div class="flex flex-wrap gap-2 mt-2">
-                    <span v-if="court.facilities.changingRooms" 
-                          class="px-2 py-1 bg-gray-700 rounded-full text-xs">
-                      Changing Rooms
-                    </span>
-                    <span v-if="court.facilities.lighting" 
-                          class="px-2 py-1 bg-gray-700 rounded-full text-xs">
-                      Lighting
-                    </span>
-                    <span v-if="court.facilities.parking" 
-                          class="px-2 py-1 bg-gray-700 rounded-full text-xs">
-                      Parking
-                    </span>
-                    <span v-if="court.facilities.shower" 
-                          class="px-2 py-1 bg-gray-700 rounded-full text-xs">
-                      Shower
-                    </span>
-                  </div>
-                </div>
-
-                <div class="flex justify-end space-x-2 mt-4">
-                  <button 
-                    @click="editCourt(court)"
-                    class="px-4 py-2 text-sm border border-green-500 text-green-500 
-                           rounded-lg hover:bg-green-500/10"
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    @click="deleteCourt(court._id)"
-                    class="px-4 py-2 text-sm border border-red-500 text-red-500 
-                           rounded-lg hover:bg-red-500/10"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
+            <CourtCard 
+              v-for="court in courts" 
+              :key="court._id"
+              :court="court"
+              @edit="editCourt"
+              @delete="deleteCourt"
+            />
           </div>
         </div>
       </div>
@@ -330,6 +270,7 @@
 
 <script setup>
 import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
+import CourtCard from '@/components/CourtCard.vue'
 import AdminSidebarNav from '@/components/AdminSidebarNav.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import { 
@@ -387,13 +328,21 @@ onMounted(async () => {
 const fetchCourts = async () => {
   loading.value = true
   try {
+    const token = localStorage.getItem('token')
+    console.log('Using token:', token) // Debug token
+
     const response = await fetch('http://localhost:5000/api/courts', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${token}`
       }
     })
+    console.log('Response status:', response.status) // Debug response status
+    
     if (!response.ok) throw new Error('Failed to fetch courts')
-    courts.value = await response.json()
+    const data = await response.json()
+    console.log('Raw response data:', data) // Debug raw data
+    courts.value = data
+    console.log('Courts after assignment:', courts.value) // Debug courts state
   } catch (error) {
     console.error('Error fetching courts:', error)
   } finally {
@@ -486,6 +435,14 @@ const handleSubmit = async () => {
     
     const method = editingCourt.value ? 'PUT' : 'POST'
 
+    // Log the request details
+    console.log('Making request to:', url)
+    console.log('Method:', method)
+    console.log('Form data entries:')
+    for (let pair of formData.entries()) {
+      console.log(pair[0], pair[1])
+    }
+
     const response = await fetch(url, {
       method,
       headers: {
@@ -493,6 +450,10 @@ const handleSubmit = async () => {
       },
       body: formData
     })
+
+    console.log('Response status:', response.status)
+    const responseData = await response.json()
+    console.log('Response data:', responseData)
 
     if (!response.ok) throw new Error('Failed to save court')
 
@@ -516,7 +477,11 @@ const handleSubmit = async () => {
       status: 'Active'
     }
     selectedImages.value = []
-    await fetchCourts()
+    
+    // Add delay before fetching courts
+    setTimeout(async () => {
+      await fetchCourts()
+    }, 1000)
 
   } catch (error) {
     console.error('Error saving court:', error)
