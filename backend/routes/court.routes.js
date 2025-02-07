@@ -45,49 +45,143 @@ router.get('/', auth, async (req, res) => {
 
 // Create a new court
 router.post('/', auth, upload.array('images', 5), async (req, res) => {
-    console.log('User data:', req.user); 
+    console.log('User data:', req.user);
     try {
+        // Parse boolean values
+        const parseBooleans = (obj) => {
+            const result = {};
+            for (const [key, value] of Object.entries(obj)) {
+                result[key] = value === 'true';
+            }
+            return result;
+        };
+
+        // Parse nested objects from form data
+        const parseNestedObject = (prefix, body) => {
+            const obj = {};
+            Object.keys(body)
+                .filter(key => key.startsWith(`${prefix}.`))
+                .forEach(key => {
+                    const nestedKey = key.split('.')[1];
+                    obj[nestedKey] = body[key];
+                });
+            return obj;
+        };
+
         const courtData = {
             ...req.body,
             futsalId: req.user.futsal,
-            images: req.files ? req.files.map(file => `/uploads/courts/${file.filename}`) : []
+            images: req.files ? req.files.map(file => `/uploads/courts/${file.filename}`) : [],
+            facilities: parseBooleans({
+                changingRooms: req.body['facilities.changingRooms'],
+                lighting: req.body['facilities.lighting'],
+                parking: req.body['facilities.parking'],
+                shower: req.body['facilities.shower']
+            }),
+            hasPeakHours: req.body.hasPeakHours === 'true',
+            hasOffPeakHours: req.body.hasOffPeakHours === 'true',
+            peakHours: parseNestedObject('peakHours', req.body),
+            offPeakHours: parseNestedObject('offPeakHours', req.body)
         };
 
-        console.log('Court data being saved:', courtData); 
+        // Convert price strings to numbers
+        courtData.priceHourly = Number(courtData.priceHourly);
+        if (courtData.hasPeakHours) {
+            courtData.pricePeakHours = Number(courtData.pricePeakHours);
+        }
+        if (courtData.hasOffPeakHours) {
+            courtData.priceOffPeakHours = Number(courtData.priceOffPeakHours);
+        }
 
-        // Convert string boolean values to actual booleans
-        courtData.facilities = {
-            changingRooms: req.body.changingRooms === 'true',
-            lighting: req.body.lighting === 'true',
-            parking: req.body.parking === 'true',
-            shower: req.body.shower === 'true'
-        };
+        console.log('Court data being saved:', courtData);
 
         const court = new Court(courtData);
         await court.save();
         res.status(201).json(court);
     } catch (error) {
-        console.log('Court data being saved:', courtData); 
-        res.status(400).json({ message: error.message, details: error.errors });
+        console.error('Error saving court:', error);
+        res.status(400).json({ 
+            message: error.message, 
+            details: error.errors || error 
+        });
     }
 });
 
 // Update a court
 router.put('/:id', auth, upload.array('images', 5), async (req, res) => {
     try {
-        const courtData = { ...req.body };
-        if (req.files && req.files.length > 0) {
-            courtData.images = req.files.map(file => `/uploads/courts/${file.filename}`);
+        // First, let's construct our update object carefully
+        const updateData = {};
+
+        // Handle basic fields
+        const basicFields = ['name', 'dimensions', 'surfaceType', 'courtType', 'status'];
+        basicFields.forEach(field => {
+            if (req.body[field]) {
+                updateData[field] = req.body[field];
+            }
+        });
+
+        // Handle numeric fields
+        updateData.priceHourly = Number(req.body.priceHourly);
+
+        // Handle boolean fields
+        updateData.hasPeakHours = req.body.hasPeakHours === 'true';
+        updateData.hasOffPeakHours = req.body.hasOffPeakHours === 'true';
+
+        // Handle facilities as a complete object
+        updateData.facilities = {
+            changingRooms: req.body['facilities.changingRooms'] === 'true',
+            lighting: req.body['facilities.lighting'] === 'true',
+            parking: req.body['facilities.parking'] === 'true',
+            shower: req.body['facilities.shower'] === 'true'
+        };
+
+        // Handle peak hours as a complete object
+        if (updateData.hasPeakHours) {
+            updateData.peakHours = {
+                start: req.body['peakHours.start'],
+                end: req.body['peakHours.end']
+            };
+            updateData.pricePeakHours = Number(req.body.pricePeakHours);
         }
 
+        // Handle off-peak hours as a complete object
+        if (updateData.hasOffPeakHours) {
+            updateData.offPeakHours = {
+                start: req.body['offPeakHours.start'],
+                end: req.body['offPeakHours.end']
+            };
+            updateData.priceOffPeakHours = Number(req.body.priceOffPeakHours);
+        }
+
+        // Handle images if new ones are uploaded
+        if (req.files && req.files.length > 0) {
+            updateData.images = req.files.map(file => `/uploads/courts/${file.filename}`);
+        }
+
+        console.log('Update data:', updateData); // For debugging
+
+        // Use findByIdAndUpdate with the complete update object
         const court = await Court.findByIdAndUpdate(
             req.params.id,
-            courtData,
-            { new: true }
+            updateData,
+            { 
+                new: true,
+                runValidators: true
+            }
         );
+
+        if (!court) {
+            return res.status(404).json({ message: 'Court not found' });
+        }
+
         res.json(court);
     } catch (error) {
-        res.status(400).json({ message: error.message, details: error.errors });
+        console.error('Error updating court:', error);
+        res.status(400).json({ 
+            message: error.message, 
+            details: error.errors || error 
+        });
     }
 });
 
