@@ -4,6 +4,18 @@ const auth = require('../middleware/auth.middleware');
 const Court = require('../models/court.model');
 const multer = require('multer');
 const path = require('path');
+const mongoose = require('mongoose');
+
+
+
+const verifyMongoose = (req, res, next) => {
+    if (!mongoose.connection.readyState) {
+        return res.status(500).json({
+            message: 'Database connection not established'
+        });
+    }
+    next();
+};
 
 // Configure multer for image upload
 const storage = multer.diskStorage({
@@ -24,6 +36,58 @@ const upload = multer({
         } else {
             cb(new Error('Not an image! Please upload images only.'), false);
         }
+    }
+});
+
+router.get('/:id', auth, verifyMongoose, async (req, res) => {
+    try {
+        // Log the mongoose readiness state and connection
+        console.log('Mongoose ready state:', mongoose.connection.readyState);
+        console.log('Attempting to fetch court:', req.params.id);
+
+        // Validate MongoDB ObjectId format using isValidObjectId
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({
+                message: 'Invalid court ID format'
+            });
+        }
+
+        const court = await Court.findById(req.params.id)
+            .populate({
+                path: 'futsalId',
+                select: 'name location coordinates'
+            });
+
+        if (!court) {
+            console.log('Court not found:', req.params.id);
+            return res.status(404).json({
+                message: 'Court not found'
+            });
+        }
+
+        // Add extra logging for successful retrieval
+        console.log('Successfully retrieved court:', {
+            id: court._id,
+            name: court.name,
+            futsalId: court.futsalId
+        });
+
+        res.json(court);
+
+    } catch (error) {
+        // Enhanced error logging
+        console.error('Court retrieval error:', {
+            error: error.message,
+            stack: error.stack,
+            courtId: req.params.id,
+            mongooseState: mongoose.connection.readyState
+        });
+
+        res.status(500).json({
+            message: 'Error retrieving court',
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 });
 

@@ -82,8 +82,26 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(500).json({
+    console.error('Global error handler:', err);
+    
+    // Handle 404 errors
+    if (err.name === 'NotFoundError') {
+        return res.status(404).json({
+            message: 'Resource not found',
+            error: err.message
+        });
+    }
+
+    // Handle validation errors
+    if (err.name === 'ValidationError') {
+        return res.status(400).json({
+            message: 'Validation error',
+            error: err.message
+        });
+    }
+
+    // Default error
+    res.status(err.status || 500).json({
         message: 'Internal server error',
         error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
     });

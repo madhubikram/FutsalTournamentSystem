@@ -73,7 +73,16 @@ const router = createRouter({
         requiresAuth: true,
         roles: ['futsalAdmin']
       }
+    },
+    {
+      path: '/courts/:id',
+      name: 'courtDetails',
+      component: () => import('@/views/CourtDetails.vue'),
+      meta: {
+        requiresAuth: true
+      }
     }
+    
   ]
 })
 
@@ -83,6 +92,12 @@ router.beforeEach((to, from, next) => {
   const userRole = localStorage.getItem('userRole')
   const profileCompleted = localStorage.getItem('profileCompleted') === 'true'
 
+  console.log('Route Guard:', {
+    to: to.path,
+    isAuthenticated,
+    userRole,
+    profileCompleted
+  });
   // First check authentication
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login')
