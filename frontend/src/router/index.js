@@ -81,6 +81,15 @@ const router = createRouter({
       meta: {
         requiresAuth: true
       }
+    },
+    {
+      path: '/admin-tournaments',
+      name: 'adminTournaments',
+      component: () => import('@/views/AdminTourny.vue'),
+      meta: {
+        requiresAuth: true,
+        roles: ['futsalAdmin']
+      }
     }
     
   ]
