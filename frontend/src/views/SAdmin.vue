@@ -1,33 +1,34 @@
+// src/views/SAdmin.vue
 <template>
   <div class="min-h-screen bg-gray-900 p-8">
     <!-- Header with Logout -->
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-2xl font-bold text-white">Super Admin Dashboard</h1>
-      <button 
+      <BaseButton 
+        variant="primary"
         @click="handleLogout"
-        class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 
-               transition-colors duration-200 flex items-center gap-2"
       >
-        <span>Logout</span>
-      </button>
+        Logout
+      </BaseButton>
     </div>
     
-    <!-- Rest of your existing content -->
-    <!-- Loading State -->
-    <div v-if="loading" class="bg-gray-800 rounded-xl p-6 text-white">
-      Loading pending verifications...
-    </div>
+    <!-- States -->
+    <LoadingState 
+      v-if="loading"
+      message="Loading pending verifications..."
+    />
 
-    <!-- Error State -->
-    <div v-if="error" class="bg-red-500/10 border border-red-500/50 rounded-xl p-6 mb-4">
+    <div 
+      v-if="error" 
+      class="bg-red-500/10 border border-red-500/50 rounded-xl p-6 mb-4"
+    >
       <p class="text-red-400">{{ error }}</p>
     </div>
 
-    <!-- No Pending Verifications -->
-    <div v-if="!loading && !error && pendingAdmins.length === 0" 
-         class="bg-gray-800 rounded-xl p-6">
-      <p class="text-gray-400">No pending verifications at this time.</p>
-    </div>
+    <EmptyState 
+      v-if="!loading && !error && pendingAdmins.length === 0"
+      message="No pending verifications at this time."
+    />
 
     <!-- Pending Verifications -->
     <div v-if="pendingAdmins.length > 0" class="bg-gray-800 rounded-xl p-6">
@@ -36,7 +37,6 @@
       <div class="space-y-6">
         <div v-for="admin in pendingAdmins" :key="admin._id" 
              class="bg-gray-700 rounded-lg p-4">
-          <!-- Your existing admin card content -->
           <div class="grid grid-cols-2 gap-4 mb-4">
             <div>
               <h3 class="text-white font-semibold">{{ admin.futsalName }}</h3>
@@ -52,8 +52,7 @@
               <div class="space-y-2">
                 <a v-for="doc in admin.documents" 
                    :key="doc"
-                   :href="doc"
-                   target="_blank"
+                   href="#"
                    @click.prevent="viewDocument(doc)"
                    class="block text-green-400 hover:text-green-300">
                   View Document
@@ -64,14 +63,18 @@
           
           <!-- Action Buttons -->
           <div class="flex space-x-4">
-            <button @click="approveAdmin(admin._id)"
-                    class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+            <BaseButton
+              variant="primary"
+              @click="approveAdmin(admin._id)"
+            >
               Approve
-            </button>
-            <button @click="rejectAdmin(admin._id)"
-                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+            </BaseButton>
+            <BaseButton
+              variant="danger"
+              @click="rejectAdmin(admin._id)"
+            >
               Reject
-            </button>
+            </BaseButton>
           </div>
         </div>
       </div>
@@ -82,6 +85,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { BaseButton } from '@/components/base'
+import LoadingState from '@/components/states/LoadingState.vue'
+import EmptyState from '@/components/states/EmptyState.vue'
 
 const router = useRouter()
 const pendingAdmins = ref([])
@@ -89,11 +95,8 @@ const loading = ref(false)
 const error = ref(null)
 
 const handleLogout = () => {
-  // Clear local storage
   localStorage.removeItem('token')
   localStorage.removeItem('userRole')
-  
-  // Redirect to login page
   router.push('/login')
 }
 
@@ -162,8 +165,10 @@ const rejectAdmin = async (adminId) => {
     console.error('Error rejecting admin:', error)
   }
 }
+
 const viewDocument = (url) => {
-    window.open(url, '_blank');
-};
+  window.open(url, '_blank')
+}
+
 onMounted(fetchPendingAdmins)
 </script>

@@ -1,115 +1,104 @@
 <template>
-  <div class="flex h-screen bg-gray-900 overflow-hidden">
-    <AdminSidebarNav />
-
-    <div class="flex-1 ml-64 min-h-screen">
-      <div class="h-full overflow-y-auto">
-        <div class="p-8">
-          <div class="flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-white">Manage Existing Courts</h1>
-            <button
-              @click="showAddCourtModal = true"
-              class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg
-                     flex items-center gap-2 transition-colors duration-200"
-            >
-              <PlusIcon class="w-5 h-5" />
-              Add Court
-            </button>
-          </div>
-        </div>
-
-        <div class="p-8 pt-4">
-          <div v-if="loading" class="text-center text-gray-400">
-            Loading courts...
-          </div>
-
-          <div v-else-if="courts.length === 0" class="text-center text-gray-400">
-            No courts added yet. Click "Add Court" to get started.
-          </div>
-
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <CourtCard
-              v-for="court in courts"
-              :key="court._id"
-              :court="court"
-              @edit="editCourt"
-              @delete="deleteCourt"
-            />
-          </div>
-        </div>
-      </div>
+  <PageLayout>
+  <div class="p-8">
+    <div class="flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-white">Manage Existing Courts</h1>
+      <button
+        @click="showAddCourtModal = true"
+        class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg
+                      flex items-center gap-2 transition-colors duration-200"
+      >
+        <PlusIcon class="w-5 h-5" />
+        Add Court
+      </button>
     </div>
+  </div>
 
-    <BaseModal v-if="showAddCourtModal" @close="showAddCourtModal = false">
-      <template #header>
-        <h3 class="text-xl font-semibold text-white">
-          {{ editingCourt ? 'Edit Court' : 'Add New Court' }}
-        </h3>
-      </template>
+  <div class="p-8 pt-4">
+    <LoadingState v-if="loading" />
+    <EmptyState v-else-if="!loading && courts.length === 0" message="No courts added yet. Click 'Add Court' to get started." />
 
-      <template #body>
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Court Name</label>
-              <input
-                v-model="courtForm.name"
-                type="text"
-                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                required
-              >
-              <p v-if="formErrors.name" class="text-xs text-red-400 mt-1">
-                {{ formErrors.name }}
-              </p>
-            </div>
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <CourtCard
+        v-for="court in courts"
+        :key="court._id"
+        :court="court"
+        @edit="editCourt"
+        @delete="deleteCourt"
+      />
+    </div>
+  </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Dimensions</label>
-              <input
-                v-model="courtForm.dimensions"
-                type="text"
-                placeholder="e.g. 78x27 ft"
-                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                required
-              >
-              <p v-if="formErrors.dimensions" class="text-xs text-red-400 mt-1">
-                {{ formErrors.dimensions }}
-              </p>
-            </div>
+  <BaseModal v-if="showAddCourtModal" @close="showAddCourtModal = false">
+    <template #header>
+      <h3 class="text-xl font-semibold text-white">
+        {{ editingCourt ? 'Edit Court' : 'Add New Court' }}
+      </h3>
+    </template>
+
+    <template #body>
+      <form @submit.prevent="handleSubmit" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">Court Name</label>
+            <input
+              v-model="courtForm.name"
+              type="text"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+              required
+            >
+            <p v-if="formErrors.name" class="text-xs text-red-400 mt-1">
+              {{ formErrors.name }}
+            </p>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Surface Type</label>
-              <input
-                v-model="courtForm.surfaceType"
-                type="text"
-                placeholder="e.g. Synthetic Turf"
-                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                required
-              >
-              <p v-if="formErrors.surfaceType" class="text-xs text-red-400 mt-1">
-                {{ formErrors.surfaceType }}
-              </p>
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">Dimensions</label>
+            <input
+              v-model="courtForm.dimensions"
+              type="text"
+              placeholder="e.g. 78x27 ft"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+              required
+            >
+            <p v-if="formErrors.dimensions" class="text-xs text-red-400 mt-1">
+              {{ formErrors.dimensions }}
+            </p>
+          </div>
+        </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Court Type</label>
-              <select
-                v-model="courtForm.courtType"
-                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                required
-              >
-                <option value="Indoor">Indoor</option>
-                <option value="Outdoor">Outdoor</option>
-              </select>
-              <p v-if="formErrors.courtType" class="text-xs text-red-400 mt-1">
-                {{ formErrors.courtType }}
-              </p>
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">Surface Type</label>
+            <input
+              v-model="courtForm.surfaceType"
+              type="text"
+              placeholder="e.g. Synthetic Turf"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+              required
+            >
+            <p v-if="formErrors.surfaceType" class="text-xs text-red-400 mt-1">
+              {{ formErrors.surfaceType }}
+            </p>
           </div>
 
-          <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">Court Type</label>
+            <select
+              v-model="courtForm.courtType"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+              required
+            >
+              <option value="Indoor">Indoor</option>
+              <option value="Outdoor">Outdoor</option>
+            </select>
+            <p v-if="formErrors.courtType" class="text-xs text-red-400 mt-1">
+              {{ formErrors.courtType }}
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-400 mb-1">Regular Price</label>
             <input
@@ -120,8 +109,8 @@
               required
             >
             <p v-if="formErrors.priceHourly" class="text-xs text-red-400 mt-1">
-                {{ formErrors.priceHourly }}
-              </p>
+              {{ formErrors.priceHourly }}
+            </p>
           </div>
 
           <div class="space-y-3">
@@ -257,142 +246,145 @@
           </div>
         </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-400 mb-2">Facilities</label>
-            <div class="grid grid-cols-2 gap-4">
-              <label class="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  v-model="courtForm.facilities.changingRooms"
-                  class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500"
-                >
-                <span class="text-gray-400">Changing Rooms</span>
-              </label>
-
-              <label class="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  v-model="courtForm.facilities.lighting"
-                  class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500">
-                  <span class="text-gray-400">Lighting</span>
-              </label>
-
-              <label class="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  v-model="courtForm.facilities.parking"
-                  class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500"
-                >
-                <span class="text-gray-400">Parking</span>
-              </label>
-
-              <label class="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  v-model="courtForm.facilities.shower"
-                  class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500"
-                >
-                <span class="text-gray-400">Shower</span>
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-400 mb-1">Status</label>
-            <select
-              v-model="courtForm.status"
-              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-              required
-            >
-              <option value="Active">Active</option>
-              <option value="Maintenance">Maintenance</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-            <p v-if="formErrors.status" class="text-xs text-red-400 mt-1">
-                {{ formErrors.status }}
-              </p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-400 mb-2">Court Images</label>
-            <div
-              class="border-2 border-dashed border-gray-600 rounded-lg p-4 hover:border-green-500
-                     transition-colors duration-200 cursor-pointer"
-              @dragover.prevent
-              @drop.prevent="handleImageDrop"
-              @click="$refs.fileInput.click()"
-            >
+        <div class="space-y-4">
+          <label class="block text-sm font-medium text-gray-400 mb-2">Facilities</label>
+          <div class="grid grid-cols-2 gap-4">
+            <label class="flex items-center space-x-2">
               <input
-                ref="fileInput"
-                type="file"
-                accept="image/*"
-                multiple
-                class="hidden"
-                @change="handleImageSelect"
+                type="checkbox"
+                v-model="courtForm.facilities.changingRooms"
+                class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500"
               >
-              <div class="text-center">
-                <ImageIcon class="w-12 h-12 mx-auto text-gray-400" />
-                <p class="mt-2 text-sm text-gray-400">
-                  Drag and drop images here, or click to select files
-                </p>
-                <p class="mt-1 text-xs text-gray-500">
-                  Supported formats: JPG, PNG (Max 5 images)
-                </p>
-              </div>
-            </div>
+              <span class="text-gray-400">Changing Rooms</span>
+            </label>
 
-            <div v-if="selectedImages.length > 0" class="mt-4 grid grid-cols-4 gap-4">
-                <div
-                    v-for="(image, index) in imagePreviewUrls"
-                    :key="index"
-                    class="relative group"
-                >
-                    <img
-                    :src="image"
-                    class="w-full h-24 object-cover rounded-lg"
-                    alt="Court preview"
-                    >
-                    <button
-                    @click="removeImage(index)"
-                    class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1
-                            opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    >
-                    <XIcon class="w-4 h-4" />
-                    </button>
-                </div>
+            <label class="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                v-model="courtForm.facilities.lighting"
+                class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500">
+              <span class="text-gray-400">Lighting</span>
+            </label>
+
+            <label class="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                v-model="courtForm.facilities.parking"
+                class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500"
+              >
+              <span class="text-gray-400">Parking</span>
+            </label>
+
+            <label class="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                v-model="courtForm.facilities.shower"
+                class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500"
+              >
+              <span class="text-gray-400">Shower</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-400 mb-1">Status</label>
+          <select
+            v-model="courtForm.status"
+            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+            required
+          >
+            <option value="Active">Active</option>
+            <option value="Maintenance">Maintenance</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+          <p v-if="formErrors.status" class="text-xs text-red-400 mt-1">
+            {{ formErrors.status }}
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-400 mb-2">Court Images</label>
+          <div
+            class="border-2 border-dashed border-gray-600 rounded-lg p-4 hover:border-green-500
+                          transition-colors duration-200 cursor-pointer"
+            @dragover.prevent
+            @drop.prevent="handleImageDrop"
+            @click="$refs.fileInput.click()"
+          >
+            <input
+              ref="fileInput"
+              type="file"
+              accept="image/*"
+              multiple
+              class="hidden"
+              @change="handleImageSelect"
+            >
+            <div class="text-center">
+              <ImageIcon class="w-12 h-12 mx-auto text-gray-400" />
+              <p class="mt-2 text-sm text-gray-400">
+                Drag and drop images here, or click to select files
+              </p>
+              <p class="mt-1 text-xs text-gray-500">
+                Supported formats: JPG, PNG (Max 5 images)
+              </p>
             </div>
           </div>
-        </form>
-      </template>
 
-      <template #footer>
-        <div class="flex justify-end space-x-3">
-          <button
-            @click="showAddCourtModal = false"
-            class="px-4 py-2 text-gray-400 hover:text-white"
-          >
-            Cancel
-          </button>
-          <button
-            @click="handleSubmit"
-            :disabled="isSubmitting"
-            class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600
-                   disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <Loader2Icon v-if="isSubmitting" class="animate-spin w-4 h-4" />
-            {{ editingCourt ? 'Save Changes' : 'Add Court' }}
-          </button>
+          <div v-if="selectedImages.length > 0" class="mt-4 grid grid-cols-4 gap-4">
+            <div
+              v-for="(image, index) in imagePreviewUrls"
+              :key="index"
+              class="relative group"
+            >
+              <img
+                :src="image"
+                class="w-full h-24 object-cover rounded-lg"
+                alt="Court preview"
+              >
+              <button
+                @click="removeImage(index)"
+                class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1
+                          opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              >
+                <XIcon class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
-      </template>
-    </BaseModal>
-  </div>
+      </form>
+      
+    </template>
+
+    <template #footer>
+      <div class="flex justify-end space-x-3">
+        <button
+          @click="showAddCourtModal = false"
+          class="px-4 py-2 text-gray-400 hover:text-white"
+        >
+          Cancel
+        </button>
+        <button
+          @click="handleSubmit"
+          :disabled="isSubmitting"
+          class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600
+                          disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          <Loader2Icon v-if="isSubmitting" class="animate-spin w-4 h-4" />
+          {{ editingCourt ? 'Save Changes' : 'Add Court' }}
+        </button>
+      </div>
+    </template>
+  </BaseModal>
+</PageLayout>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
 import CourtCard from '@/components/CourtCard.vue'
-import AdminSidebarNav from '@/components/AdminSidebarNav.vue'
 import BaseModal from '@/components/BaseModal.vue'
+import LoadingState from '@/components/states/LoadingState.vue'
+import EmptyState from '@/components/states/EmptyState.vue'
+import PageLayout from '@/components/layout/PageLayout.vue'
 import {
   PlusIcon, ImageIcon, XIcon, Loader2Icon
 } from 'lucide-vue-next'
@@ -484,42 +476,42 @@ const validateRequiredFields = () => {
   Object.keys(formErrors.value).forEach(key => formErrors.value[key] = ''); // Reset errors
 
   const requiredFields = [
-      { field: 'name', message: 'Court name is required' },
-      { field: 'dimensions', message: 'Dimensions are required' },
-      { field: 'surfaceType', message: 'Surface type is required' },
-      { field: 'courtType', message: 'Court type is required' },
-      { field: 'priceHourly', message: 'Valid price is required', condition: (value) => !value || value <= 0 },
-      { field: 'status', message: 'Status is required' }
+    { field: 'name', message: 'Court name is required' },
+    { field: 'dimensions', message: 'Dimensions are required' },
+    { field: 'surfaceType', message: 'Surface type is required' },
+    { field: 'courtType', message: 'Court type is required' },
+    { field: 'priceHourly', message: 'Valid price is required', condition: (value) => !value || value <= 0 },
+    { field: 'status', message: 'Status is required' }
   ];
 
   for (const { field, message, condition } of requiredFields) {
-      const fieldValue = courtForm.value[field];
-      if (condition ? condition(fieldValue) : !fieldValue?.trim()) {
-          formErrors.value[field] = message;
-          isValid = false;
-      }
+    const fieldValue = courtForm.value[field];
+    if (condition ? condition(fieldValue) : !fieldValue?.trim()) {
+      formErrors.value[field] = message;
+      isValid = false;
+    }
   }
 
   if (courtForm.value.hasPeakHours) {
-      if (!courtForm.value.peakHours.start || !courtForm.value.peakHours.end) {
-          formErrors.value.peakHours = 'Peak hours time range is required';
-          isValid = false;
-      }
-      if (!courtForm.value.pricePeakHours || courtForm.value.pricePeakHours < 0) {
-          formErrors.value.pricePeakHours = 'Valid peak hours price is required';
-          isValid = false;
-      }
+    if (!courtForm.value.peakHours.start || !courtForm.value.peakHours.end) {
+      formErrors.value.peakHours = 'Peak hours time range is required';
+      isValid = false;
+    }
+    if (!courtForm.value.pricePeakHours || courtForm.value.pricePeakHours < 0) {
+      formErrors.value.pricePeakHours = 'Valid peak hours price is required';
+      isValid = false;
+    }
   }
 
   if (courtForm.value.hasOffPeakHours) {
-      if (!courtForm.value.offPeakHours.start || !courtForm.value.offPeakHours.end) {
-          formErrors.value.offPeakHours = 'Off-peak hours time range is required';
-          isValid = false;
-      }
-      if (!courtForm.value.priceOffPeakHours || courtForm.value.priceOffPeakHours < 0) {
-          formErrors.value.priceOffPeakHours = 'Valid off-peak hours price is required';
-          isValid = false;
-      }
+    if (!courtForm.value.offPeakHours.start || !courtForm.value.offPeakHours.end) {
+      formErrors.value.offPeakHours = 'Off-peak hours time range is required';
+      isValid = false;
+    }
+    if (!courtForm.value.priceOffPeakHours || courtForm.value.priceOffPeakHours < 0) {
+      formErrors.value.priceOffPeakHours = 'Valid off-peak hours price is required';
+      isValid = false;
+    }
   }
   return isValid;
 };

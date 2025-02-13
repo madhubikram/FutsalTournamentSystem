@@ -1,515 +1,467 @@
 <template>
-  <div class="flex h-screen bg-gray-900 overflow-hidden">
-    <AdminSidebarNav />
-
-    <div class="flex-1 ml-64 min-h-screen">
-      <div class="h-full overflow-y-auto">
-        <div class="p-8">
-          <div class="flex justify-between items-center mb-8">
-            <h1 class="text-2xl font-bold text-white">Tournament Management</h1>
-            <button
-              @click="openCreateTournamentModal()"
-              class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center gap-2 transition-colors duration-200"
-            >
-              <PlusIcon class="w-5 h-5" />
-              Create Tournament
-            </button>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <div
-              v-for="tournament in tournaments"
-              :key="tournament.id"
-              class="bg-gray-800 rounded-xl overflow-hidden border border-gray-700 transition-all duration-300
-                        hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] hover:border-green-500/50 group"
-            >
-              <div class="relative aspect-[16/9] overflow-hidden">
-                <img
-                  :src="tournament.banner
-                    ? `http://localhost:5000${tournament.banner}`
-                    : '/placeholder-tournament.jpg'"
-                  :alt="tournament.name"
-                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-
-                <span
-                  :class="[
-                    'absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm flex items-center gap-1 transition-transform duration-300 hover:scale-105',
-                    {
-                      'bg-green-500 text-white': tournament.status === 'Upcoming',
-                      'bg-blue-500 text-white': tournament.status === 'Ongoing',
-                      'bg-gray-500 text-white': tournament.status === 'Completed',
-                    }
-                  ]"
-                >
-                  <span class="w-2 h-2 rounded-full" :class="{
-                      'bg-green-300': tournament.status === 'Upcoming',
-                      'bg-blue-300': tournament.status === 'Ongoing',
-                      'bg-gray-300': tournament.status === 'Completed',
-                    }"></span>
-                  {{ tournament.status }}
-                </span>
-
-                <div class="absolute top-4 left-4 flex gap-2">
-                  <button
-                    v-if="tournament.status === 'Upcoming'"
-                    @click.stop="editTournament(tournament)"
-                    class="p-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg
-                            backdrop-blur-sm transition-all duration-200 hover:scale-105"
-                    title="Edit Tournament"
-                  >
-                    <EditIcon class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg
-                            backdrop-blur-sm transition-all duration-200 hover:scale-105"
-                    @click.stop="deleteTournament(tournament)"
-                    title="Delete Tournament"
-                  >
-                    <Trash2Icon class="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div class="p-6">
-                <h3 class="text-xl font-semibold text-white mb-2 group-hover:text-green-400 transition-colors duration-300">
-                  {{ tournament.name }}
-                </h3>
-                <p class="text-gray-400 text-sm mb-4">{{ tournament.description }}</p>
-
-                <div class="space-y-3">
-                  <div class="flex items-center text-gray-400 justify-between">
-                    <div class="flex items-center">
-                      <CalendarIcon class="w-4 h-4 mr-2" />
-                      <span class="text-sm">Start Date:</span>
-                    </div>
-                    <span class="text-sm">{{ new Date(tournament.startDate).toLocaleDateString() }}</span>
-                  </div>
-                  <div class="flex items-center text-gray-400 justify-between">
-                    <div class="flex items-center">
-                      <CalendarIcon class="w-4 h-4 mr-2" />
-                      <span class="text-sm">Reg. Deadline:</span>
-                    </div>
-                    <span class="text-sm">{{ new Date(tournament.registrationDeadline).toLocaleDateString() }}</span>
-                  </div>
-                  <div class="flex items-center text-gray-400 justify-between">
-                    <div class="flex items-center">
-                      <UsersIcon class="w-4 h-4 mr-2" />
-                      <span class="text-sm">Teams:</span>
-                    </div>
-                    <span class="text-sm">{{ tournament.registeredTeams }}/{{ tournament.maxTeams }}</span>
-                  </div>
-                  <div class="flex items-center text-gray-400 justify-between">
-                    <div class="flex items-center">
-                      <TrophyIcon class="w-4 h-4 mr-2" />
-                      <span class="text-sm">Prize Pool:</span>
-                    </div>
-                    <span class="text-sm">Rs. {{ tournament.prizePool }}</span>
-                  </div>
-                </div>
-
-                <button
-                  @click.stop="viewTournament(tournament)"
-                  class="w-full mt-6 px-4 py-3 bg-green-500/10 text-green-400 rounded-lg
-                            hover:bg-green-500/20 transition-all duration-300 flex items-center justify-center gap-2
-                            hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <InfoIcon class="w-4 h-4" />
-                  View Details
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  <PageLayout>
+  <div class="p-8">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-2xl font-bold text-white">Tournament Management</h1>
+      <button
+        @click="openCreateTournamentModal()"
+        class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center gap-2 transition-colors duration-200"
+      >
+        <PlusIcon class="w-5 h-5" />
+        Create Tournament
+      </button>
     </div>
 
-    <BaseModal v-if="showCreateTournamentModal" @close="closeCreateTournamentModal">
-      <template #header>
-        <h3 class="text-xl font-semibold text-white">
-          {{ editingTournamentId ? 'Edit Tournament' : 'Create New Tournament' }}
-        </h3>
-      </template>
+    <LoadingState v-if="loading" />
+    <EmptyState v-else-if="!loading && tournaments.length === 0" message="No tournaments created yet." />
 
-      <template #body>
-        <form @submit.prevent="handleCreateTournament" class="space-y-8">
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Basic Information</h4>
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Tournament Name</label>
-              <input
-                v-model="tournamentForm.name"
-                type="text"
-                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                required
-              />
+    <div
+      v-else
+      class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+    >
+      <BaseCard
+        v-for="tournament in tournaments"
+        :key="tournament.id"
+        :item-type="'Tournament'"
+        :image-src="tournament.banner
+                    ? `http://localhost:5000${tournament.banner}`
+                    : '/placeholder-tournament.jpg'"
+        :image-alt="tournament.name"
+        :status="tournament.status"
+        :title="tournament.name"
+        :show-admin-controls="true"
+        :details-button-text="'View Details'"
+        :status-color-class="statusColorClass(tournament.status)"
+        :status-dot-class="statusDotClass(tournament.status)"
+        @edit-item="editTournament(tournament)"
+        @delete-item="deleteTournament(tournament)"
+        @view-details="viewTournament(tournament)"
+      >
+        <template #tournament-details>
+          <div class="space-y-3">
+            <p class="text-gray-400 text-sm mb-4">{{ tournament.description }}</p>
+            <div class="flex items-center text-gray-400 justify-between">
+              <div class="flex items-center">
+                <CalendarIcon class="w-4 h-4 mr-2" />
+                <span class="text-sm">Start Date:</span>
+              </div>
+              <span class="text-sm">{{ new Date(tournament.startDate).toLocaleDateString() }}</span>
             </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Description</label>
-              <textarea
-                v-model="tournamentForm.description"
-                rows="3"
-                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                required
-              ></textarea>
+            <div class="flex items-center text-gray-400 justify-between">
+              <div class="flex items-center">
+                <CalendarIcon class="w-4 h-4 mr-2" />
+                <span class="text-sm">Reg. Deadline:</span>
+              </div>
+              <span class="text-sm">{{ new Date(tournament.registrationDeadline).toLocaleDateString() }}</span>
+            </div>
+            <div class="flex items-center text-gray-400 justify-between">
+              <div class="flex items-center">
+                <UsersIcon class="w-4 h-4 mr-2" />
+                <span class="text-sm">Teams:</span>
+              </div>
+              <span class="text-sm">{{ tournament.registeredTeams }}/{{ tournament.maxTeams }}</span>
+            </div>
+            <div class="flex items-center text-gray-400 justify-between">
+              <div class="flex items-center">
+                <TrophyIcon class="w-4 h-4 mr-2" />
+                <span class="text-sm">Prize Pool:</span>
+              </div>
+              <span class="text-sm">Rs. {{ tournament.prizePool }}</span>
             </div>
           </div>
+        </template>
+      </BaseCard>
+    </div>
+  </div>
 
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Schedule</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Start Date</label>
-                <input
-                  v-model="tournamentForm.startDate"
-                  type="date"
-                  class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                  :min="minDate"
-                  required
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Start Time</label>
-                <input
-                  v-model="tournamentForm.startTime"
-                  type="time"
-                  class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">End Date</label>
-              <input
-                v-model="tournamentForm.endDate"
-                type="date"
-                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                :min="tournamentForm.startDate || minDate"
-                required
-              />
-            </div>
+  <BaseModal v-if="showCreateTournamentModal" @close="closeCreateTournamentModal">
+    <template #header>
+      <h3 class="text-xl font-semibold text-white">
+        {{ editingTournamentId ? 'Edit Tournament' : 'Create New Tournament' }}
+      </h3>
+    </template>
 
+    <template #body>
+      <form @submit.prevent="handleCreateTournament" class="space-y-8">
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Basic Information</h4>
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">Tournament Name</label>
+            <input
+              v-model="tournamentForm.name"
+              type="text"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">Description</label>
+            <textarea
+              v-model="tournamentForm.description"
+              rows="3"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+              required
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Schedule</h4>
+          <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-400 mb-1">Registration Deadline</label>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Start Date</label>
               <input
-                v-model="tournamentForm.registrationDeadline"
+                v-model="tournamentForm.startDate"
                 type="date"
                 class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
                 :min="minDate"
-                :max="tournamentForm.startDate"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Start Time</label>
+              <input
+                v-model="tournamentForm.startTime"
+                type="time"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
                 required
               />
             </div>
           </div>
-
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Match Settings</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Half Duration</label>
-                <div class="flex items-center gap-2">
-                  <input
-                    v-model="tournamentForm.halfDuration"
-                    type="number"
-                    min="10"
-                    max="45"
-                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                    required
-                  />
-                  <span class="text-gray-400 whitespace-nowrap">minutes</span>
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Break Time</label>
-                <div class="flex items-center gap-2">
-                  <input
-                    v-model="tournamentForm.breakDuration"
-                    type="number"
-                    min="5"
-                    max="15"
-                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                    required
-                  />
-                  <span class="text-gray-400 whitespace-nowrap">minutes</span>
-                </div>
-              </div>
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">End Date</label>
+            <input
+              v-model="tournamentForm.endDate"
+              type="date"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+              :min="tournamentForm.startDate || minDate"
+              required
+            />
           </div>
 
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Tournament Format</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Format Type</label>
-                <select
-                  v-model="tournamentForm.format"
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">Registration Deadline</label>
+            <input
+              v-model="tournamentForm.registrationDeadline"
+              type="date"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+              :min="minDate"
+              :max="tournamentForm.startDate"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Match Settings</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Half Duration</label>
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="tournamentForm.halfDuration"
+                  type="number"
+                  min="10"
+                  max="45"
                   class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
                   required
-                >
-                  <option value="single">Single Elimination</option>
-                </select>
+                />
+                <span class="text-gray-400 whitespace-nowrap">minutes</span>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Maximum Teams</label>
-                <select
-                  v-model="tournamentForm.maxTeams"
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Break Time</label>
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="tournamentForm.breakDuration"
+                  type="number"
+                  min="5"
+                  max="15"
                   class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
                   required
-                >
-                  <option value="8">8 Teams</option>
-                  <option value="16">16 Teams</option>
-                  <option value="32">32 Teams</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-2">Team Size</label>
-              <div class="grid grid-cols-3 gap-4">
-                <div class="col-span-2">
-                  <label class="block text-xs text-gray-500 mb-1">Players Per Team</label>
-                  <select
-                    v-model="tournamentForm.teamSize"
-                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                    required
-                  >
-                    <option value="5">5 Players</option>
-                    <option value="6">6 Players</option>
-                    <option value="7">7 Players</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs text-gray-500 mb-1">Substitutes</label>
-                  <select
-                    v-model="tournamentForm.substitutes"
-                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                    required
-                  >
-                    <option value="2">2 Subs</option>
-                    <option value="3">3 Subs</option>
-                    <option value="4">4 Subs</option>
-                  </select>
-                </div>
+                />
+                <span class="text-gray-400 whitespace-nowrap">minutes</span>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Financial Details</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Registration Fee</label>
-                <div class="flex items-center gap-2">
-                  <span class="text-gray-400">Rs.</span>
-                  <input
-                    v-model="tournamentForm.registrationFee"
-                    type="number"
-                    min="0"
-                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-1">Prize Pool</label>
-                <div class="flex items-center gap-2">
-                  <span class="text-gray-400">Rs.</span>
-                  <input
-                    v-model="tournamentForm.prizePool"
-                    type="number"
-                    min="0"
-                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Tournament Rules</h4>
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Tournament Format</h4>
+          <div class="grid grid-cols-2 gap-4">
             <div>
-              <textarea
-                v-model="tournamentForm.rules"
-                rows="4"
+              <label class="block text-sm font-medium text-gray-400 mb-1">Format Type</label>
+              <select
+                v-model="tournamentForm.format"
                 class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter tournament rules and regulations..."
                 required
-              ></textarea>
+              >
+                <option value="single">Single Elimination</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Maximum Teams</label>
+              <select
+                v-model="tournamentForm.maxTeams"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+                required
+              >
+                <option value="8">8 Teams</option>
+                <option value="16">16 Teams</option>
+                <option value="32">32 Teams</option>
+              </select>
             </div>
           </div>
 
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Tournament Banner</h4>
-            <ImageUpload
-              v-model="tournamentImages"
-              :multiple="false"
-              :max-files="1"
-              label="Tournament Banner"
-              placeholder="Upload a banner image for your tournament"
-              @error="handleImageError"
-            />
-          </div>
-        </form>
-      </template>
-
-      <template #footer>
-        <div class="flex justify-end space-x-3">
-          <button
-            @click="closeCreateTournamentModal"
-            class="px-4 py-2 text-gray-400 hover:text-white rounded-lg transition-colors duration-200"
-          >
-            Cancel
-          </button>
-          <button
-            @click="handleCreateTournament"
-            :disabled="isSubmitting"
-            class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-200"
-          >
-            <Loader2Icon v-if="isSubmitting" class="animate-spin w-4 h-4" />
-            {{ editingTournamentId ? 'Save Changes' : 'Create Tournament' }}
-          </button>
-        </div>
-      </template>
-    </BaseModal>
-
-    <BaseModal v-if="showViewModal" @close="showViewModal = false">
-      <template #header>
-        <h3 class="text-xl font-semibold text-white">Tournament Details</h3>
-      </template>
-
-      <template #body>
-        <div v-if="selectedTournament" class="space-y-8">
-          <div v-if="selectedTournament.banner" class="aspect-video rounded-lg overflow-hidden">
-            <img
-              :src="`http://localhost:5000${selectedTournament.banner}`"
-              class="w-full h-full object-cover"
-              :alt="selectedTournament.name"
-            />
-          </div>
-
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Basic Information</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs text-gray-500">Tournament Name</label>
-                <p class="text-white">{{ selectedTournament.name }}</p>
-              </div>
-              <div>
-                <label class="block text-xs text-gray-500">Status</label>
-                <span
-                  :class="{
-                    'px-2 py-1 rounded-full text-xs font-medium inline-block': true,
-                    'bg-green-500/10 text-green-400': selectedTournament.status === 'Upcoming',
-                    'bg-blue-500/10 text-blue-400': selectedTournament.status === 'Ongoing',
-                    'bg-gray-500/10 text-gray-400': selectedTournament.status === 'Completed',
-                  }"
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">Team Size</label>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="col-span-2">
+                <label class="block text-xs text-gray-500 mb-1">Players Per Team</label>
+                <select
+                  v-model="tournamentForm.teamSize"
+                  class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+                  required
                 >
-                  {{ selectedTournament.status }}
-                </span>
-              </div>
-            </div>
-            <div>
-              <label class="block text-xs text-gray-500">Description</label>
-              <p class="text-white">{{ selectedTournament.description }}</p>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Schedule</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs text-gray-500">Start Date</label>
-                <p class="text-white">{{ new Date(selectedTournament.startDate).toLocaleDateString() }}</p>
+                  <option value="5">5 Players</option>
+                  <option value="6">6 Players</option>
+                  <option value="7">7 Players</option>
+                </select>
               </div>
               <div>
-                <label class="block text-xs text-gray-500">Start Time</label>
-                <p class="text-white">{{ selectedTournament.startTime }}</p>
+                <label class="block text-xs text-gray-500 mb-1">Substitutes</label>
+                <select
+                  v-model="tournamentForm.substitutes"
+                  class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+                  required
+                >
+                  <option value="2">2 Subs</option>
+                  <option value="3">3 Subs</option>
+                  <option value="4">4 Subs</option>
+                </select>
               </div>
             </div>
-            <div>
-              <label class="block text-xs text-gray-500">Registration Deadline</label>
-              <p class="text-white">{{ new Date(selectedTournament.registrationDeadline).toLocaleDateString() }}</p>
-            </div>
-            <div>
-              <label class="block text-xs text-gray-500">End Date</label>
-              <p class="text-white">{{ selectedTournament.endDate ? new Date(selectedTournament.endDate).toLocaleDateString() : 'N/A' }}</p>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Match Settings</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs text-gray-500">Match Duration</label>
-                <p class="text-white">{{ selectedTournament.halfDuration * 2 + selectedTournament.breakDuration }} minutes ({{ selectedTournament.halfDuration }}' + {{ selectedTournament.breakDuration }}' + {{ selectedTournament.halfDuration }}')</p>
-              </div>
-              <div>
-                <label class="block text-xs text-gray-500">Format</label>
-                <p class="text-white">{{ selectedTournament.format === 'single' ? 'Single Elimination' : 'Double Elimination' }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Team Information</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs text-gray-500">Maximum Teams</label>
-                <p class="text-white">{{ selectedTournament.maxTeams }} Teams</p>
-              </div>
-              <div>
-                <label class="block text-xs text-gray-500">Team Size</label>
-                <p class="text-white">{{ selectedTournament.teamSize }} Players + {{ selectedTournament.substitutes }} Substitutes</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Financial Details</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs text-gray-500">Registration Fee</label>
-                <p class="text-white">Rs. {{ selectedTournament.registrationFee }}</p>
-              </div>
-              <div>
-                <label class="block text-xs text-gray-500">Prize Pool</label>
-                <p class="text-white">Rs. {{ selectedTournament.prizePool }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-gray-300">Tournament Rules</h4>
-            <p class="text-white whitespace-pre-line">{{ selectedTournament.rules }}</p>
           </div>
         </div>
-      </template>
 
-      <template #footer>
-        <div class="flex justify-end">
-          <button
-            @click="showViewModal = false"
-            class="px-4 py-2 text-gray-400 hover:text-white rounded-lg transition-colors duration-200"
-          >
-            Close
-          </button>
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Financial Details</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Registration Fee</label>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-400">Rs.</span>
+                <input
+                  v-model="tournamentForm.registrationFee"
+                  type="number"
+                  min="0"
+                  class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Prize Pool</label>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-400">Rs.</span>
+                <input
+                  v-model="tournamentForm.prizePool"
+                  type="number"
+                  min="0"
+                  class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+                  required
+                />
+              </div>
+            </div>
+          </div>
         </div>
-      </template>
-    </BaseModal>
-  </div>
+
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Tournament Rules</h4>
+          <div>
+            <textarea
+              v-model="tournamentForm.rules"
+              rows="4"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+              placeholder="Enter tournament rules and regulations..."
+              required
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Tournament Banner</h4>
+          <ImageUpload
+            v-model="tournamentImages"
+            :multiple="false"
+            :max-files="1"
+            label="Tournament Banner"
+            placeholder="Upload a banner image for your tournament"
+            @error="handleImageError"
+          />
+        </div>
+      </form>
+    </template>
+
+    <template #footer>
+      <div class="flex justify-end space-x-3">
+        <button
+          @click="closeCreateTournamentModal"
+          class="px-4 py-2 text-gray-400 hover:text-white rounded-lg transition-colors duration-200"
+        >
+          Cancel
+        </button>
+        <button
+          @click="handleCreateTournament"
+          :disabled="isSubmitting"
+          class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-200"
+        >
+          <Loader2Icon v-if="isSubmitting" class="animate-spin w-4 h-4" />
+          {{ editingTournamentId ? 'Save Changes' : 'Create Tournament' }}
+        </button>
+      </div>
+    </template>
+  </BaseModal>
+
+  <BaseModal v-if="showViewModal" @close="showViewModal = false">
+    <template #header>
+      <h3 class="text-xl font-semibold text-white">Tournament Details</h3>
+    </template>
+
+    <template #body>
+      <div v-if="selectedTournament" class="space-y-8">
+        <div v-if="selectedTournament.banner" class="aspect-video rounded-lg overflow-hidden">
+          <img
+            :src="`http://localhost:5000${selectedTournament.banner}`"
+            class="w-full h-full object-cover"
+            :alt="selectedTournament.name"
+          />
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Basic Information</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500">Tournament Name</label>
+              <p class="text-white">{{ selectedTournament.name }}</p>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500">Status</label>
+              <span
+                :class="{
+                  'px-2 py-1 rounded-full text-xs font-medium inline-block': true,
+                  'bg-green-500/10 text-green-400': selectedTournament.status === 'Upcoming',
+                  'bg-blue-500/10 text-blue-400': selectedTournament.status === 'Ongoing',
+                  'bg-gray-500/10 text-gray-400': selectedTournament.status === 'Completed',
+                }"
+              >
+                {{ selectedTournament.status }}
+              </span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500">Description</label>
+            <p class="text-white">{{ selectedTournament.description }}</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Schedule</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500">Start Date</label>
+              <p class="text-white">{{ new Date(selectedTournament.startDate).toLocaleDateString() }}</p>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500">Start Time</label>
+              <p class="text-white">{{ selectedTournament.startTime }}</p>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500">Registration Deadline</label>
+            <p class="text-white">{{ new Date(selectedTournament.registrationDeadline).toLocaleDateString() }}</p>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500">End Date</label>
+            <p class="text-white">{{ selectedTournament.endDate ? new Date(selectedTournament.endDate).toLocaleDateString() : 'N/A' }}</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Match Settings</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500">Match Duration</label>
+              <p class="text-white">{{ selectedTournament.halfDuration * 2 + selectedTournament.breakDuration }} minutes ({{ selectedTournament.halfDuration }}' + {{ selectedTournament.breakDuration }}' + {{ selectedTournament.halfDuration }}')</p>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500">Format</label>
+              <p class="text-white">{{ selectedTournament.format === 'single' ? 'Single Elimination' : 'Double Elimination' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Team Information</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500">Maximum Teams</label>
+              <p class="text-white">{{ selectedTournament.maxTeams }} Teams</p>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500">Team Size</label>
+              <p class="text-white">{{ selectedTournament.teamSize }} Players + {{ selectedTournament.substitutes }} Substitutes</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Financial Details</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500">Registration Fee</label>
+              <p class="text-white">Rs. {{ selectedTournament.registrationFee }}</p>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500">Prize Pool</label>
+              <p class="text-white">Rs. {{ selectedTournament.prizePool }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-gray-300">Tournament Rules</h4>
+          <p class="text-white whitespace-pre-line">{{ selectedTournament.rules }}</p>
+        </div>
+      </div>
+    </template>
+
+    <template #footer>
+      <div class="flex justify-end">
+        <button
+          @click="showViewModal = false"
+          class="px-4 py-2 text-gray-400 hover:text-white rounded-lg transition-colors duration-200"
+        >
+          Close
+        </button>
+      </div>
+    </template>
+  </BaseModal>
+</PageLayout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import AdminSidebarNav from '@/components/AdminSidebarNav.vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import BaseModal from '@/components/BaseModal.vue'
+import BaseCard from '@/components/base/BaseCard.vue' // Import BaseCard
 import ImageUpload from '@/components/ImageUpload.vue'
+import LoadingState from '@/components/states/LoadingState.vue'
+import EmptyState from '@/components/states/EmptyState.vue'
+import PageLayout from '@/components/layout/PageLayout.vue'
 import {
   PlusIcon, CalendarIcon, UsersIcon, TrophyIcon,
-  Loader2Icon, InfoIcon, EditIcon, Trash2Icon
+  Loader2Icon,
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router';
 
@@ -550,6 +502,27 @@ const tournamentForm = ref({
   prizePool: 0,
   rules: ''
 })
+
+// Status Color Classes for Tournament - ADDED FUNCTIONS HERE!
+const statusColorClass = (status) => {
+  return status === 'Upcoming'
+    ? 'bg-green-500 text-white'
+    : status === 'Ongoing'
+      ? 'bg-blue-500 text-white'
+      : status === 'Completed'
+        ? 'bg-gray-500 text-white'
+        : ''
+}
+
+const statusDotClass = (status) => {
+  return status === 'Upcoming'
+    ? 'bg-green-300'
+    : status === 'Ongoing'
+      ? 'bg-blue-300'
+      : status === 'Completed'
+        ? 'bg-gray-300'
+        : ''
+}
 
 
 // Methods
@@ -796,7 +769,7 @@ onMounted(async () => {
   statusInterval = setInterval(updateTournamentStatus, 60000);
 });
 
-onMounted(() => {
+onUnmounted(() => {
   if (statusInterval) {
     clearInterval(statusInterval);
   }

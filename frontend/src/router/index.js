@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginPage from '../views/LoginPage.vue'
 import RegisterPage from '@/views/RegisterPage.vue'
 import HomePage from '@/views/HomePage.vue'
-import VerificationPendingPage from '@/views/VerificationPendingPage.vue'
 import SAdmin from '@/views/SAdmin.vue'
 import ProfileCompletion from '@/views/ProfileCompletion.vue'
 
@@ -31,11 +30,6 @@ const router = createRouter({
         requiresAuth: true,
         roles: ['player']
       }
-    },
-    {
-      path: '/verification-pending',
-      name: 'verificationPending',
-      component: VerificationPendingPage
     },
     {
       path: '/super-admin',
