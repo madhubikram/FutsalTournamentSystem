@@ -1,7 +1,7 @@
 <template>
   <PageLayout>
-  <div class="p-8">
-    <div class="flex justify-between items-center mb-8">
+    <div class="px-4 md:px-8 py-4 md:py-6">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
       <h1 class="text-2xl font-bold text-white">Tournament Management</h1>
       <button
         @click="openCreateTournamentModal()"
@@ -12,12 +12,13 @@
       </button>
     </div>
 
+    <div class="overflow-x-hidden">
     <LoadingState v-if="loading" />
     <EmptyState v-else-if="!loading && tournaments.length === 0" message="No tournaments created yet." />
 
     <div
       v-else
-      class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+      class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6"
     >
       <BaseCard
         v-for="tournament in tournaments"
@@ -72,6 +73,7 @@
         </template>
       </BaseCard>
     </div>
+  </div>
   </div>
 
   <BaseModal v-if="showCreateTournamentModal" @close="closeCreateTournamentModal">

@@ -2,7 +2,7 @@
   <div class="min-h-screen flex items-center justify-center relative overflow-hidden">
     <div
       class="absolute inset-0 bg-cover bg-center bg-no-repeat"
-      style="background-image: url('/src/assets/image (1).jpg'); filter: blur(4px);"
+      style="background-image: url('/background.jpg'); filter: blur(4px);"
     ></div>
     <div class="absolute inset-0 bg-black/50"></div>
 

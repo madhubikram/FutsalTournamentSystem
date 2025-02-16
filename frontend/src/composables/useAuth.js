@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNotification } from './useNotification'
+import API_URL from '@/config/api'
 
 export function useAuth() {
   const router = useRouter()
@@ -14,9 +15,10 @@ export function useAuth() {
     error.value = ''
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',  
         body: JSON.stringify(credentials)
       })
 
@@ -40,7 +42,7 @@ export function useAuth() {
     } catch (err) {
       error.value = err.message
       addNotification(err.message, 'error')
-      throw err
+      throw err 
     } finally {
       isLoading.value = false
     }

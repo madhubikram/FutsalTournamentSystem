@@ -1,26 +1,22 @@
 <template>
+  <!-- Desktop Sidebar -->
   <div 
     :class="[
-      'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white fixed h-full flex flex-col shadow-2xl transition-all duration-500',
+      'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white fixed h-full flex-col shadow-2xl transition-all duration-500 hidden md:flex z-50',
       isCollapsed ? 'w-20' : 'w-64'
     ]"
   >
-    <!-- Animated Background Effects -->
-     <!-- Clean Background with Subtle Gradient -->
-     <div class="absolute inset-0 bg-gradient-to-b from-gray-900 to-gray-800"></div>
-    
-    <!-- Minimal Line Accent -->
+    <!-- Desktop sidebar content (unchanged from your original) -->
+    <div class="absolute inset-0 bg-gradient-to-b from-gray-900 to-gray-800"></div>
     <div class="absolute inset-y-0 right-0 w-px bg-gray-700"></div>
-    <!-- Toggle Button -->
+    
     <div class="relative p-4 text-right">
       <button
         @click="toggleSidebar"
         class="group relative bg-gray-800/50 p-2 rounded-xl backdrop-blur-md border border-gray-700/50 
                hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all duration-300"
       >
-        <!-- Button Glow Effect -->
         <div class="absolute inset-0 rounded-xl bg-emerald-500/20 opacity-0 group-hover:opacity-100 blur-xl transition-all duration-300"></div>
-        
         <div class="relative">
           <MenuIcon 
             v-if="isCollapsed" 
@@ -34,7 +30,6 @@
       </button>
     </div>
 
-    <!-- Logo Section -->
     <div class="relative text-center mb-8 px-4">
       <div class="relative">
         <h1 class="text-2xl font-bold tracking-wide">
@@ -53,8 +48,6 @@
             ⚽
           </span>
         </h1>
-        
-        <!-- Animated Decorative Lines -->
         <div v-if="!isCollapsed" class="mt-2 space-y-1">
           <div class="h-px bg-gradient-to-r from-emerald-500/40 via-emerald-400/20 to-transparent"></div>
           <div class="h-px bg-gradient-to-r from-transparent via-emerald-400/20 to-emerald-500/40"></div>
@@ -62,7 +55,6 @@
       </div>
     </div>
 
-    <!-- Navigation Menu -->
     <div class="flex-grow px-3 relative">
       <nav class="space-y-2">
         <router-link
@@ -77,16 +69,11 @@
               : 'hover:bg-gradient-to-r hover:from-emerald-500/10 hover:to-transparent hover:border-l-4 hover:border-emerald-400/50'
           ]"
         >
-          <!-- Active Link Glow -->
           <div 
             v-if="route.path === link.to"
             class="absolute inset-0 bg-emerald-500/20 blur-2xl"
           ></div>
-
-          <!-- Hover Glow Effect -->
           <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-          <!-- Icon with Animation -->
           <div class="relative">
             <component
               :is="link.icon"
@@ -97,8 +84,6 @@
               }"
             />
           </div>
-
-          <!-- Label -->
           <span 
             v-if="!isCollapsed" 
             class="font-medium whitespace-nowrap transition-all duration-300"
@@ -109,8 +94,6 @@
           >
             {{ link.label }}
           </span>
-
-          <!-- Active Indicator -->
           <div 
             v-if="route.path === link.to && !isCollapsed"
             class="flex items-center ml-auto space-x-1"
@@ -128,22 +111,16 @@
       </nav>
     </div>
 
-    <!-- Logout Section -->
     <div class="relative mt-auto">
-      <!-- Gradient Fade -->
       <div class="absolute inset-x-0 -top-12 h-12 bg-gradient-to-b from-transparent via-gray-900/50 to-gray-900"></div>
-      
       <div class="p-3">
         <button
           @click="handleLogout"
           class="w-full group flex items-center justify-center p-3 rounded-xl relative overflow-hidden
                  transition-all duration-300"
         >
-          <!-- Background Effects -->
           <div class="absolute inset-0 bg-gradient-to-r from-red-500/10 to-transparent transition-opacity duration-300 group-hover:opacity-100"></div>
           <div class="absolute inset-0 bg-gradient-to-r from-red-500/20 to-transparent opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300"></div>
-
-          <!-- Content -->
           <div class="relative flex items-center justify-center space-x-3">
             <LogOutIcon 
               class="w-6 h-6 text-red-400 transition-all duration-300 group-hover:text-red-300 group-hover:scale-110" 
@@ -157,6 +134,28 @@
           </div>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <div class="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 md:hidden z-50">
+    <div class="flex justify-around items-center h-16 px-2">
+      <router-link
+        v-for="link in mobileLinks"
+        :key="link.to"
+        :to="link.to"
+        class="p-3 rounded-full relative transition-colors duration-200 flex flex-col items-center"
+        :class="route.path === link.to ? 'text-emerald-400' : 'text-gray-400'"
+      >
+        <component
+          :is="link.icon"
+          class="w-6 h-6"
+        />
+        <div 
+          v-if="route.path === link.to"
+          class="absolute -top-0.5 w-1.5 h-1.5 bg-emerald-400 rounded-full"
+        ></div>
+      </router-link>
     </div>
   </div>
 </template>
@@ -187,11 +186,17 @@ const links = [
   { to: '/admin-profile', label: 'Profile', icon: UserIcon },
 ]
 
-// In both sidebar components, update the toggleSidebar function:
+const mobileLinks = [
+  { to: '/admin-dashboard', label: 'Home', icon: LayoutDashboardIcon },
+  { to: '/admin-bookings', label: 'Bookings', icon: CalendarDaysIcon },
+  { to: '/admin-courts', label: 'Courts', icon: LayoutGridIcon },
+  { to: '/admin-tournaments', label: 'Tournaments', icon: TrophyIcon },
+  { to: '/admin-profile', label: 'Profile', icon: UserIcon },
+]
+
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
   localStorage.setItem('sidebarCollapsed', isCollapsed.value)
-  // Dispatch custom event for local state management
   window.dispatchEvent(new Event('sidebarToggle'))
 }
 
@@ -203,7 +208,7 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
-/* Advanced Animations */
+/* Animation styles */
 @keyframes blob {
   0% { transform: translate(0px, 0px) scale(1); }
   33% { transform: translate(30px, -30px) scale(1.2); }
@@ -244,35 +249,30 @@ const handleLogout = () => {
   animation-delay: 0.4s;
 }
 
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-
 .drop-shadow-glow {
   filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.4));
 }
 
-/* Glass Effect */
-.backdrop-blur-custom {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* Mobile active indicator */
+.router-link-active .active-dot {
+  display: block;
 }
 
-/* Smooth transitions */
-.router-link-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Content spacing helper classes (add to your main content container) */
+.main-content {
+  margin-left: 5rem; /* Default for collapsed sidebar */
+  padding-bottom: 4rem; /* Space for mobile nav */
+  transition: margin-left 0.3s ease;
 }
 
-/* Better hover states */
-.hover\:scale-custom {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hover\:scale-custom:hover {
-  transform: scale(1.05);
+@media (min-width: 768px) {
+  .main-content {
+    margin-left: 16rem; /* Expanded sidebar width */
+    padding-bottom: 0;
+  }
+  
+  .sidebar-collapsed .main-content {
+    margin-left: 5rem; /* Collapsed sidebar width */
+  }
 }
 </style>
