@@ -48,6 +48,9 @@
     <div class="p-6">
       <h3 class="text-xl font-semibold text-white mb-4 group-hover:text-green-400 transition-colors duration-300">
         {{ court.name }}
+        <span class="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded-full border border-indigo-500/20">
+          {{ court.courtSide }} Side
+        </span>
       </h3>
       
       <!-- Pricing Information with Enhanced Design -->

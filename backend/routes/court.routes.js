@@ -39,73 +39,80 @@ const upload = multer({
     }
 });
 
-router.get('/:id', auth, verifyMongoose, async (req, res) => {
+// Get all courts for the futsal
+router.get('/', auth, async (req, res) => {
     try {
-        // Log the mongoose readiness state and connection
-        console.log('Mongoose ready state:', mongoose.connection.readyState);
-        console.log('Attempting to fetch court:', req.params.id);
-
-        // Validate MongoDB ObjectId format using isValidObjectId
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            return res.status(400).json({
-                message: 'Invalid court ID format'
-            });
+        let courts;
+        
+        // If user is a futsal admin, show only their courts
+        if (req.user.role === 'futsalAdmin') {
+            courts = await Court.find({ futsalId: req.user.futsal })
+                               .populate('futsalId', 'name location');
+        } 
+        // If user is a player, show all active courts
+        else {
+            courts = await Court.find({ status: 'Active' })
+                               .populate('futsalId', 'name location');
         }
-
-        const court = await Court.findById(req.params.id)
-            .populate({
-                path: 'futsalId',
-                select: 'name location coordinates'
-            });
-
-        if (!court) {
-            console.log('Court not found:', req.params.id);
-            return res.status(404).json({
-                message: 'Court not found'
-            });
-        }
-
-        // Add extra logging for successful retrieval
-        console.log('Successfully retrieved court:', {
-            id: court._id,
-            name: court.name,
-            futsalId: court.futsalId
-        });
-
-        res.json(court);
-
+        
+        console.log('Found courts:', courts);
+        res.json(courts);
     } catch (error) {
-        // Enhanced error logging
-        console.error('Court retrieval error:', {
-            error: error.message,
-            stack: error.stack,
-            courtId: req.params.id,
-            mongooseState: mongoose.connection.readyState
-        });
+        console.error('Error in GET courts:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
 
-        res.status(500).json({
-            message: 'Error retrieving court',
-            error: error.message,
-            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+router.get('/settings', auth, async (req, res) => {
+    try {
+        // Get setting from any court of this futsal
+        const court = await Court.findOne({ futsalId: req.user.futsal });
+        
+        res.json({
+            requirePrepayment: court?.requirePrepayment || false
+        });
+    } catch (error) {
+        console.error('Error fetching settings:', error);
+        res.status(500).json({ 
+            message: 'Error fetching settings',
+            error: error.message 
         });
     }
 });
 
-// Get all courts for the futsal
-router.get('/', auth, async (req, res) => {
+router.put('/prepayment', auth, async (req, res) => {
     try {
-        console.log('User making request:', req.user) // Log user
-        console.log('User futsal:', req.user.futsal) // Log futsal ID
+        const { requirePrepayment } = req.body;
+        if (typeof requirePrepayment !== 'boolean') {
+            return res.status(400).json({ 
+                message: 'requirePrepayment must be a boolean value' 
+            });
+        }
+
+        if (!req.user.futsal) {
+            return res.status(400).json({ 
+                message: 'No futsal associated with this user' 
+            });
+        }
         
-        const courts = await Court.find({ futsalId: req.user.futsal })
-        console.log('Found courts:', courts) // Log found courts
-        
-        res.json(courts)
+        const result = await Court.updateMany(
+            { futsalId: req.user.futsal },
+            { $set: { requirePrepayment } }
+        );
+
+        res.json({ 
+            message: 'Prepayment setting updated successfully',
+            requirePrepayment,
+            updatedCount: result.modifiedCount
+        });
     } catch (error) {
-        console.error('Error in GET courts:', error)
-        res.status(500).json({ message: error.message })
+        console.error('Error updating prepayment setting:', error);
+        res.status(500).json({ 
+            message: 'Error updating prepayment setting',
+            error: error.message 
+        });
     }
-})
+});
 
 // Create a new court
 router.post('/', auth, upload.array('images', 5), async (req, res) => {
@@ -170,6 +177,60 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
         });
     }
 });
+
+router.get('/:id', auth, verifyMongoose, async (req, res) => {
+    try {
+        // Log the mongoose readiness state and connection
+        console.log('Mongoose ready state:', mongoose.connection.readyState);
+        console.log('Attempting to fetch court:', req.params.id);
+
+        // Validate MongoDB ObjectId format using isValidObjectId
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({
+                message: 'Invalid court ID format'
+            });
+        }
+
+        const court = await Court.findById(req.params.id)
+            .populate({
+                path: 'futsalId',
+                select: 'name location coordinates'
+            });
+
+        if (!court) {
+            console.log('Court not found:', req.params.id);
+            return res.status(404).json({
+                message: 'Court not found'
+            });
+        }
+
+        // Add extra logging for successful retrieval
+        console.log('Successfully retrieved court:', {
+            id: court._id,
+            name: court.name,
+            futsalId: court.futsalId
+        });
+
+        res.json(court);
+
+    } catch (error) {
+        // Enhanced error logging
+        console.error('Court retrieval error:', {
+            error: error.message,
+            stack: error.stack,
+            courtId: req.params.id,
+            mongooseState: mongoose.connection.readyState
+        });
+
+        res.status(500).json({
+            message: 'Error retrieving court',
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
+
 
 // Update a court
 router.put('/:id', auth, upload.array('images', 5), async (req, res) => {
@@ -248,7 +309,7 @@ router.put('/:id', auth, upload.array('images', 5), async (req, res) => {
         });
     }
 });
-
+    
 // Delete a court
 router.delete('/:id', auth, async (req, res) => {
     try {

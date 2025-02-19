@@ -5,6 +5,7 @@ const cors = require('cors');
 const fs = require('fs');
 
 // Import routes
+const playerCourtRoutes = require('./routes/playerCourt.routes');
 const authRoutes = require('./routes/auth.routes');
 const protectedRoutes = require('./routes/protected.routes');
 const futsalRoutes = require('./routes/futsal.routes');
@@ -67,6 +68,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API Routes
 app.use('/api/courts', courtRoutes);
+app.use('/api/player/courts', playerCourtRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/futsal', futsalRoutes);
 app.use('/api/tournaments', tournamentRoutes); 

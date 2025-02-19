@@ -1,22 +1,38 @@
-// routes/futsal.routes.js
 const express = require('express');
-const router = express.Router();  // Add this line
+const router = express.Router();
 const auth = require('../middleware/auth.middleware');
 const Futsal = require('../models/futsal.model');
 const User = require('../models/user.model');
 
-// routes/futsal.routes.js
-// routes/futsal.routes.js
 router.post('/profile', auth, async (req, res) => {
     try {
         console.log('Creating futsal profile for user:', req.user._id);
         console.log('Request body:', req.body);
 
-        // Validate input
+        // Basic input validation
         if (!req.body || !req.body.description || !req.body.location) {
             return res.status(400).json({
                 message: 'Missing required fields',
                 received: req.body
+            });
+        }
+
+        // Operating hours validation
+        if (!req.body.operatingHours || 
+            !req.body.operatingHours.opening || 
+            !req.body.operatingHours.closing) {
+            return res.status(400).json({
+                message: 'Operating hours are required',
+                received: req.body.operatingHours
+            });
+        }
+
+        // Time format validation using regex
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (!timeRegex.test(req.body.operatingHours.opening) || 
+            !timeRegex.test(req.body.operatingHours.closing)) {
+            return res.status(400).json({
+                message: 'Invalid time format. Please use HH:mm format'
             });
         }
 
@@ -27,6 +43,10 @@ router.post('/profile', auth, async (req, res) => {
             coordinates: {
                 lat: req.body.location.lat,
                 lng: req.body.location.lng
+            },
+            operatingHours: {
+                opening: req.body.operatingHours.opening,
+                closing: req.body.operatingHours.closing
             },
             owner: req.user._id
         };
@@ -60,4 +80,4 @@ router.post('/profile', auth, async (req, res) => {
     }
 });
 
-module.exports = router;  // Add this line
+module.exports = router;

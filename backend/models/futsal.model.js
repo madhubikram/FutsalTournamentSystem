@@ -18,6 +18,16 @@ const futsalSchema = new mongoose.Schema({
         lat: { type: Number, required: true },
         lng: { type: Number, required: true }
     },
+    operatingHours: {
+        opening: { 
+            type: String,
+            required: true
+        },
+        closing: { 
+            type: String,
+            required: true
+        }
+    },
     facilities: [{ 
         type: String 
     }],

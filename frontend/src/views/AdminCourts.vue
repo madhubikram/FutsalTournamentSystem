@@ -14,8 +14,32 @@
     </div>
   </div>
 
+  <div class="flex items-center gap-4 px-8">
+    <span class="text-gray-400 text-sm">Require Prepayment</span>
+    <button
+      type="button"
+      @click="togglePrepayment"
+      :class="{
+        'relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200': true,
+        'bg-green-500': requirePrepayment,
+        'bg-gray-600': !requirePrepayment
+      }"
+    >
+      <span
+        :class="{
+          'inline-block h-4 w-4 transform rounded-full bg-white transition-transform': true,
+          'translate-x-6': requirePrepayment,
+          'translate-x-1': !requirePrepayment
+        }"
+      />
+    </button>
+  </div>
+
   <div class="p-8 pt-4">
-    <LoadingState v-if="loading" />
+    <LoadingState 
+      v-if="loading" 
+       message="Loading courts..."
+      />
     <EmptyState v-else-if="!loading && courts.length === 0" message="No courts added yet. Click 'Add Court' to get started." />
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -99,18 +123,35 @@
         </div>
 
         <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-400 mb-1">Regular Price</label>
-            <input
-              v-model="courtForm.priceHourly"
-              type="number"
-              min="0"
-              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-              required
-            >
-            <p v-if="formErrors.priceHourly" class="text-xs text-red-400 mt-1">
-              {{ formErrors.priceHourly }}
-            </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Regular Price</label>
+              <input
+                v-model="courtForm.priceHourly"
+                type="number"
+                min="0"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                required
+              >
+              <p v-if="formErrors.priceHourly" class="text-xs text-red-400 mt-1">
+                {{ formErrors.priceHourly }}
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Court Side</label>
+              <select
+                v-model="courtForm.courtSide"
+                class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                required
+              >
+                <option value="5A">5A Side</option>
+                <option value="7A">7A Side</option>
+              </select>
+              <p v-if="formErrors.courtSide" class="text-xs text-red-400 mt-1">
+                {{ formErrors.courtSide }}
+              </p>
+            </div>
           </div>
 
           <div class="space-y-3">
@@ -396,6 +437,41 @@ const imagePreviewUrls = computed(() => {
   })
 })
 
+
+const requirePrepayment = ref(false);
+
+const togglePrepayment = async () => {
+  try {
+    const newValue = !requirePrepayment.value;
+    requirePrepayment.value = newValue;
+
+    const token = localStorage.getItem('token');
+    const response = await fetch('http://localhost:5000/api/courts/prepayment', {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        requirePrepayment: newValue
+      })
+    });
+
+    if (!response.ok) {
+      requirePrepayment.value = !newValue;
+      throw new Error('Failed to update prepayment setting');
+    }
+    courts.value = courts.value.map(court => ({
+      ...court,
+      requirePrepayment: newValue
+    }));
+
+  } catch (error) {
+    console.error('Error toggling prepayment:', error);
+  }
+};
+
+
 const formErrors = ref({
   peakHours: '',
   offPeakHours: '',
@@ -480,6 +556,7 @@ const validateRequiredFields = () => {
     { field: 'dimensions', message: 'Dimensions are required' },
     { field: 'surfaceType', message: 'Surface type is required' },
     { field: 'courtType', message: 'Court type is required' },
+    { field: 'courtSide', message: 'Court side is required' },
     { field: 'priceHourly', message: 'Valid price is required', condition: (value) => !value || value <= 0 },
     { field: 'status', message: 'Status is required' }
   ];
@@ -540,6 +617,7 @@ const courtForm = ref({
   surfaceType: '',
   courtType: 'Indoor',
   priceHourly: '',
+  courtSide: '5A',
   hasPeakHours: false,
   peakHours: {
     start: '',
@@ -566,21 +644,42 @@ onMounted(async () => {
 })
 
 const fetchCourts = async () => {
-  loading.value = true;
-  try {
-    const token = localStorage.getItem('token');
-    const response = await fetch('http://localhost:5000/api/courts', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!response.ok) throw new Error('Failed to fetch courts');
-    courts.value = await response.json();
-  } catch (error) {
-    console.error('Error fetching courts:', error);
-  } finally {
-    loading.value = false;
-  }
-};
+    loading.value = true;
+    try {
+        const token = localStorage.getItem('token');
+        
+        // First try to fetch courts
+        const courtsResponse = await fetch('http://localhost:5000/api/courts', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
 
+        if (!courtsResponse.ok) {
+            throw new Error('Failed to fetch courts');
+        }
+
+        courts.value = await courtsResponse.json();
+        
+        // Then try to fetch settings
+        try {
+            const settingsResponse = await fetch('http://localhost:5000/api/courts/settings', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (settingsResponse.ok) {
+                const settingsData = await settingsResponse.json();
+                requirePrepayment.value = settingsData.requirePrepayment;
+            }
+        } catch (settingsError) {
+            console.warn('Error fetching settings:', settingsError);
+            // Don't throw error for settings - just log warning
+        }
+
+    } catch (error) {
+        console.error('Error fetching courts:', error);
+    } finally {
+        loading.value = false;
+    }
+};
 
 const handleImageSelect = (event) => handleImageFiles(Array.from(event.target.files));
 const handleImageDrop = (event) => {
@@ -644,6 +743,8 @@ const handleSubmit = async () => {
         formData.append('facilities.parking', courtForm.value.facilities.parking);
         formData.append('facilities.shower', courtForm.value.facilities.shower);
 
+        formData.append('requirePrepayment', requirePrepayment.value);
+        formData.append('courtSide', courtForm.value.courtSide);
         // Add peak hours data
         formData.append('hasPeakHours', courtForm.value.hasPeakHours);
         if (courtForm.value.hasPeakHours) {

@@ -79,7 +79,18 @@
     </div>
 
         <div class="p-8 pt-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+       <!-- Loading State -->
+       <div v-if="loading" class="flex justify-center items-center min-h-[400px]">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="error" class="flex justify-center items-center min-h-[400px]">
+        <div class="text-red-400">{{ error }}</div>
+      </div>
+
+      <!-- Courts Grid -->
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <FutsalCard
           v-for="futsal in paginatedFutsals"
           :key="futsal.id"
@@ -88,6 +99,7 @@
           @toggle-favorite="toggleFavorite"
         />
       </div>
+
 
             <div v-if="totalPages > 1" class="flex justify-center space-x-4 pb-8">
         <button
@@ -124,12 +136,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted  } from 'vue'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import FutsalCard from '@/components/features/FutsalCard.vue'
 import {
   MedalIcon, BellIcon, FilterIcon, MapIcon, ArrowUpDownIcon
 } from 'lucide-vue-next'
+
+const error = ref(null);
 
 // User data (mocked)
 const rewardPoints = ref(150)
@@ -145,148 +159,9 @@ const currentPage = ref(1)
 const itemsPerPage = 9
 
 // Mock data for futsals
-const futsals = ref([
-  {
-    id: 1,
-    name: 'Downtown Futsal',
-    location: 'Putalisadak, Kathmandu',
-    rating: 4.8,
-    distance: 2.5,
-    regularPrice: 1200,
-    peakPrice: 1500,
-    peakHours: { start: '16:00', end: '20:00' },
-    offPeakPrice: 1000,
-    offPeakHours: { start: '10:00', end: '14:00' },
-    isFavorite: false,
-    images: ['image_fx_ (1).jpg']
-  },
-  {
-    id: 2,
-    name: 'Green Field Arena',
-    location: 'Baneshwor, Kathmandu',
-    rating: 4.5,
-    distance: 1.8,
-    regularPrice: 1500,
-    peakPrice: 1800,
-    peakHours: { start: '17:00', end: '21:00' },
-    offPeakPrice: 1200,
-    offPeakHours: { start: '09:00', end: '13:00' },
-    isFavorite: true,
-    images: ['image_fx_ (4).jpg']
-  },
-  {
-    id: 3,
-    name: 'Sports Complex',
-    location: 'Tinkune, Kathmandu',
-    rating: 4.2,
-    distance: 3.2,
-    regularPrice: 1000,
-    peakPrice: 1300,
-    peakHours: { start: '16:00', end: '20:00' },
-    offPeakPrice: 800,
-    offPeakHours: { start: '11:00', end: '15:00' },
-    isFavorite: false,
-    images: ['image_fx_ (5).jpg']
-  },
-  {
-    id: 4,
-    name: 'Futsal Ground ABC',
-    location: 'New Baneshwor, Kathmandu',
-    rating: 4.6,
-    distance: 2.0,
-    regularPrice: 1300,
-    peakPrice: 1600,
-    peakHours: { start: '18:00', end: '22:00' },
-    offPeakPrice: 1100,
-    offPeakHours: { start: '10:00', end: '14:00' },
-    isFavorite: true,
-    images: ['image_fx_ (6).jpg']
-  },
-  {
-    id: 5,
-    name: 'Goal Post Arena',
-    location: 'Old Baneshwor, Kathmandu',
-    rating: 4.9,
-    distance: 1.5,
-    regularPrice: 1600,
-    peakPrice: 2000,
-    peakHours: { start: '19:00', end: '23:00' },
-    offPeakPrice: 1400,
-    offPeakHours: { start: '09:00', end: '12:00' },
-    isFavorite: false,
-    images: ['image_fx_ (8).jpg']
-  },
-  {
-    id: 6,
-    name: 'Kick Off Futsal',
-    location: 'Koteshwor, Kathmandu',
-    rating: 4.3,
-    distance: 3.5,
-    regularPrice: 1100,
-    peakPrice: 1400,
-    peakHours: { start: '17:00', end: '21:00' },
-    offPeakPrice: 900,
-    offPeakHours: { start: '11:00', end: '15:00' },
-    isFavorite: false,
-    images: ['image_fx_ (14).jpg']
-  },
-  {
-    id: 7,
-    name: 'Stadium Futsal',
-    location: 'Gaushala, Kathmandu',
-    rating: 4.7,
-    distance: 2.8,
-    regularPrice: 1400,
-    peakPrice: 1700,
-    peakHours: { start: '16:00', end: '20:00' },
-    offPeakPrice: 1200,
-    offPeakHours: { start: '10:00', end: '14:00' },
-    isFavorite: true,
-    images: ['image_fx_ (15).jpg']
-  },
-  {
-    id: 8,
-    name: 'The Turf Arena',
-    location: 'Sinamangal, Kathmandu',
-    rating: 4.4,
-    distance: 2.2,
-    regularPrice: 1250,
-    peakPrice: 1550,
-    peakHours: { start: '18:00', end: '22:00' },
-    offPeakPrice: 1050,
-    offPeakHours: { start: '09:00', end: '13:00' },
-    isFavorite: false,
-    images: []
-  },
-  {
-    id: 9,
-    name: 'Goal Getter Futsal',
-    location: 'Battisputali, Kathmandu',
-    rating: 4.1,
-    distance: 3.0,
-    regularPrice: 950,
-    peakPrice: 1250,
-    peakHours: { start: '19:00', end: '23:00' },
-    offPeakPrice: 750,
-    offPeakHours: { start: '12:00', end: '16:00' },
-    isFavorite: true,
-    images: ['futsal2.jpg']
-  },
-  {
-    id: 10,
-    name: 'Championship Arena',
-    location: 'Airport Area, Kathmandu',
-    rating: 4.5,
-    distance: 3.8,
-    regularPrice: 1550,
-    peakPrice: 1900,
-    peakHours: { start: '17:00', end: '21:00' },
-    offPeakPrice: 1350,
-    offPeakHours: { start: '11:00', end: '15:00' },
-    isFavorite: false,
-    images: ['image_fx_ (16).jpg']
-  }
-])
+const futsals = ref([])
+const loading = ref(true)
+
 
 // Sorting function
 const sortBy = (field) => {
@@ -340,6 +215,122 @@ const filteredFutsals = computed(() => {
 
   return result;
 })
+
+const fetchCourts = async () => {
+  try {
+    loading.value = true;
+    error.value = null;
+    
+    const token = localStorage.getItem('token');
+    const response = await fetch('http://localhost:5000/api/courts', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch courts');
+    }
+
+    const courts = await response.json();
+    
+    futsals.value = courts.map(court => {
+      // Get current time to check if we're in peak/off-peak hours
+      const now = new Date();
+      const currentTime = now.toTimeString().slice(0, 5); // Format: HH:mm
+
+      // Add debugging logs
+      console.log('Court:', court.name);
+      console.log('Current time:', currentTime);
+      console.log('Peak hours:', court.peakHours);
+      console.log('Has peak hours:', court.hasPeakHours);
+
+      // Start with the base hourly price set by admin
+      let currentRate = court.priceHourly;
+      
+      // Check if current time is in peak hours
+      if (court.hasPeakHours) {
+        const isPeakHour = isTimeInRange(currentTime, court.peakHours.start, court.peakHours.end);
+        console.log('Is peak hour:', isPeakHour);
+        if (isPeakHour) {
+          currentRate = court.pricePeakHours;
+        }
+      }
+
+      // Check if current time is in off-peak hours
+      if (court.hasOffPeakHours) {
+        const isOffPeakHour = isTimeInRange(currentTime, court.offPeakHours.start, court.offPeakHours.end);
+        if (isOffPeakHour) {
+          currentRate = court.priceOffPeakHours;
+        }
+      }
+
+      console.log('Regular price:', court.priceHourly);
+      console.log('Current rate:', currentRate);
+
+      // Extract full location and format it
+      const fullLocation = court.futsalId?.location || '';
+      const [area, city = 'Kathmandu'] = fullLocation.split(',').map(part => part.trim());
+      const formattedLocation = `${area}, ${city}`;
+
+      return {
+        id: court._id,
+        futsalName: court.futsalId?.name || 'Unknown Futsal',
+        courtName: court.name,
+        location: formattedLocation,
+        rating: 4.5,
+        distance: '2.5',
+        courtSide: court.courtSide,
+        regularPrice: court.priceHourly, // Changed this to use currentRate
+        peakPrice: court.pricePeakHours || 0,
+        offPeakPrice: court.priceOffPeakHours || 0,
+        currentlyPeakHours: court.hasPeakHours && 
+          isTimeInRange(currentTime, court.peakHours.start, court.peakHours.end),
+        currentlyOffPeakHours: court.hasOffPeakHours && 
+          isTimeInRange(currentTime, court.offPeakHours.start, court.offPeakHours.end),
+        peakHours: court.hasPeakHours ? {
+          start: court.peakHours.start,
+          end: court.peakHours.end
+        } : null,
+        offPeakHours: court.hasOffPeakHours ? {
+          start: court.offPeakHours.start,
+          end: court.offPeakHours.end
+        } : null,
+        isFavorite: false,
+        images: court.images?.map(img => `http://localhost:5000${img}`) || [],
+        prepaymentRequired: court.requirePrepayment || false
+      };
+    });
+
+  } catch (error) {
+    console.error('Error fetching courts:', error);
+    error.value = 'Failed to load courts';
+  } finally {
+    loading.value = false;
+  }
+};
+// Call fetchCourts when component mounts
+onMounted(fetchCourts)
+
+const isTimeInRange = (currentTime, start, end) => {
+  if (!start || !end) {
+    console.log('Missing start or end time');
+    return false;
+  }
+  
+  const timeToMinutes = (time) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const current = timeToMinutes(currentTime);
+  const startTime = timeToMinutes(start);
+  const endTime = timeToMinutes(end);
+
+  console.log(`Time check: ${current} >= ${startTime} && ${current} <= ${endTime}`);
+  
+  return current >= startTime && current <= endTime;
+};
 
 const totalPages = computed(() => {
   const total = Math.ceil(filteredFutsals.value.length / itemsPerPage);

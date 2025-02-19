@@ -18,6 +18,11 @@ const courtSchema = new mongoose.Schema({
         enum: ['Indoor', 'Outdoor'],
         required: true
     },
+    courtSide: {
+        type: String,
+        enum: ['5A', '7A'],
+        required: true
+    },
     priceHourly: {
         type: Number,
         required: true,
@@ -63,14 +68,67 @@ const courtSchema = new mongoose.Schema({
     images: [{
         type: String
     }],
+    requirePrepayment: {
+        type: Boolean,
+        default: false
+      },
     futsalId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Futsal',
         required: true
-    }
+    },
+    reviews: [{
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true
+        },
+        rating: {
+          type: Number,
+          required: true,
+          min: 1,
+          max: 5
+        },
+        comment: {
+          type: String,
+          required: true
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now
+        },
+        reactions: [{
+            user: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: 'User',
+              required: true
+            },
+            type: {
+              type: String,
+              enum: ['like', 'dislike'],
+              required: true
+            },
+            createdAt: {
+              type: Date,
+              default: Date.now
+            }
+          }]
+      }],
+      
+      averageRating: {
+        type: Number,
+        default: 0
+      },
 }, {
     timestamps: true
 });
+
+courtSchema.methods.calculateAverageRating = function() {
+    if (this.reviews.length === 0) return 0;
+    
+    const sum = this.reviews.reduce((acc, review) => acc + review.rating, 0);
+    return Math.round((sum / this.reviews.length) * 10) / 10;
+  };
 
 // Validate time ranges
 courtSchema.pre('save', function(next) {
