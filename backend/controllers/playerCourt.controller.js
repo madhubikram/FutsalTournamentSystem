@@ -110,12 +110,20 @@ checkAvailability: async (req, res) => {
 
 addReview: async (req, res) => {
     try {
+      console.log('Adding review:', {
+        userId: req.user?._id,
+        body: req.body
+      })
       const { rating, comment } = req.body;
       const court = await Court.findById(req.params.id);
+      if (!req.user?._id) {
+        return res.status(401).json({ message: 'User not authenticated' })
+      }
   
       if (!court) {
         return res.status(404).json({ message: 'Court not found' });
       }
+      
   
       // Check if user has already reviewed
       const existingReview = court.reviews.find(
@@ -183,29 +191,38 @@ addReview: async (req, res) => {
 
   deleteReview: async (req, res) => {
     try {
-      const court = await Court.findById(req.params.id);
-  
+      const court = await Court.findById(req.params.id)
       if (!court) {
-        return res.status(404).json({ message: 'Court not found' });
+        return res.status(404).json({ message: 'Court not found' })
       }
   
-      const review = court.reviews.id(req.params.reviewId);
-      
+      const review = court.reviews.id(req.params.reviewId)
       if (!review) {
-        return res.status(404).json({ message: 'Review not found' });
+        return res.status(404).json({ message: 'Review not found' })
       }
   
       if (review.user.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ message: 'Not authorized to delete this review' });
+        return res.status(403).json({ message: 'Not authorized to delete this review' })
       }
   
-      review.remove();
-      court.averageRating = court.calculateAverageRating();
+      // Use pull instead of remove for better compatibility
+      court.reviews.pull(review)
+      court.averageRating = court.calculateAverageRating()
       
-      await court.save();
-      res.json({ message: 'Review deleted successfully' });
+      await court.save()
+      
+      // Return the updated court object
+      const updatedCourt = await Court.findById(court._id)
+        .populate('reviews.user', 'username')
+        .populate('reviews.reactions.user', 'username')
+      
+      res.json(updatedCourt)
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      console.error('Error deleting review:', error)
+      res.status(500).json({ 
+        message: 'Error deleting review',
+        error: error.message 
+      })
     }
   },
 

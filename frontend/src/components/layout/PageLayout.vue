@@ -1,31 +1,29 @@
 <template>
   <div class="flex min-h-screen bg-gray-900">
-    <!-- Render either AdminSidebarNav or SidebarNav based on user role -->
+    <!-- Desktop Sidebar -->
     <div class="hidden md:block fixed z-20 h-full">
       <AdminSidebarNav v-if="userRole === 'futsalAdmin'" />
       <SidebarNav v-else />
     </div>
     
-    <!-- Main content area that adjusts with sidebar state -->
+    <!-- Main Content -->
     <div 
       class="flex-1 min-h-screen w-full transition-all duration-500"
       :class="{
-        'md:ml-64': !isCollapsed,  // Default margin for expanded sidebar
-        'md:ml-20': isCollapsed,   // Margin when sidebar is collapsed
-        'ml-0': true     // No left margin and bottom padding for mobile
+        'md:ml-64': !isCollapsed,
+        'md:ml-20': isCollapsed,
+        'ml-0': true,
+        'pb-16 md:pb-0': true // Add padding for mobile nav
       }"
     >
-    <div :class="[
-        hasPadding ? 'p-4 md:p-8' : '',
-        'min-h-screen pb-20 md:pb-0' // Add bottom padding for mobile
-      ]">
+      <div :class="[hasPadding ? 'p-4 md:p-8' : '', 'min-h-screen']">
         <slot></slot>
       </div>
     </div>
 
- <!-- Mobile bottom navigation -->
- <div class="fixed bottom-0 left-0 right-0 bg-gray-800 md:hidden">
-      <div class="flex justify-around items-center h-16">
+    <!-- Mobile Navigation -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 z-50">
+      <div class="bg-gray-900/95 backdrop-blur-md border-t border-gray-800">
         <AdminSidebarNav v-if="userRole === 'futsalAdmin'" />
         <SidebarNav v-else />
       </div>

@@ -39,29 +39,31 @@ const register = async (req, res) => {
   }
 
       // Check for existing user
-      const existingUser = await User.findOne({
-          $or: [
-              { email },
-              { username },
-              { panNumber: panNumber || null },
-              { contactNumber }
-          ]
-      });
-
-      if (existingUser) {
-          let errorMessage = '';
-          if (existingUser.email === email) {
-              errorMessage = 'Email already exists';
-          } else if (existingUser.username === username) {
-              errorMessage = 'Username already exists';
-          } else if (existingUser.contactNumber === contactNumber) {
-            message = 'Contact number already registered';
-        } else if (existingUser.panNumber === panNumber) {
-              errorMessage = 'PAN number already registered';
-          }
-          return res.status(400).json({ message: errorMessage });
+      const conditions = [
+        { email },
+        { username },
+        { contactNumber }
+      ];
+      if (role === 'futsalAdmin' && panNumber) {
+        conditions.push({ panNumber });
       }
-
+      const existingUser = await User.findOne({
+        $or: conditions
+      });
+      
+      if (existingUser) {
+        let errorMessage = '';
+        if (existingUser.email === email) {
+          errorMessage = 'Email already exists';
+        } else if (existingUser.username === username) {
+          errorMessage = 'Username already exists';
+        } else if (existingUser.contactNumber === contactNumber) {
+          errorMessage = 'Contact number already registered';
+        } else if (role === 'futsalAdmin' && existingUser.panNumber === panNumber) {
+          errorMessage = 'PAN number already registered';
+        }
+        return res.status(400).json({ message: errorMessage });
+      }
            // Handle uploaded files
            const documentPaths = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
 

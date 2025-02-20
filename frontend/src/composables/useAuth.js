@@ -28,14 +28,15 @@ export function useAuth() {
         throw new Error(data.message || 'Login failed')
       }
 
-      // Store auth data
+      // Store ALL necessary auth data
       localStorage.setItem('token', data.token)
       localStorage.setItem('userRole', data.user.role)
       localStorage.setItem('profileCompleted', data.user.profileCompleted)
+      localStorage.setItem('userId', data.user.id) // Add this line
+      localStorage.setItem('username', data.user.username) // Optional but useful
 
       addNotification('Login successful', 'success')
       
-      // Route based on role
       await handleRoleBasedRedirect(data.user)
       
       return data
@@ -69,17 +70,29 @@ export function useAuth() {
   }
 
   const logout = async () => {
+    // Clear ALL stored data
     localStorage.removeItem('token')
     localStorage.removeItem('userRole')
     localStorage.removeItem('profileCompleted')
+    localStorage.removeItem('userId') // Add this line
+    localStorage.removeItem('username') // If you added it
+    
     await router.push('/login')
     addNotification('Logged out successfully', 'success')
+  }
+
+  const isAuthenticated = () => {
+    return Boolean(
+      localStorage.getItem('token') && 
+      localStorage.getItem('userId')
+    )
   }
 
   return {
     login,
     logout,
     isLoading,
-    error
+    error,
+    isAuthenticated
   }
 }
