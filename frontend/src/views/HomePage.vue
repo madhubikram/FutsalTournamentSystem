@@ -15,14 +15,7 @@
           </div>
 
           <div class="flex items-center space-x-8">
-            <div class="flex items-center space-x-2">
-              <div class="relative">
-                <MedalIcon class="w-14 h-6 text-purple-400" />
-                <span class="absolute -top-2 -right-2 bg-purple-500 text-xs text-white rounded-full px-1.5 py-0.5">
-                  {{ rewardPoints }}
-                </span>
-              </div>
-            </div>
+            <LoyaltyPointsDisplay />
             <BellIcon class="w-6 h-6 text-gray-200 cursor-pointer hover:text-green-400 transition-colors duration-300" />
           </div>
         </div>
@@ -139,14 +132,13 @@
 import { ref, computed, watch, onMounted  } from 'vue'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import FutsalCard from '@/components/features/FutsalCard.vue'
-import {
-  MedalIcon, BellIcon, FilterIcon, MapIcon, ArrowUpDownIcon
+import {BellIcon, FilterIcon, MapIcon, ArrowUpDownIcon
 } from 'lucide-vue-next'
+import LoyaltyPointsDisplay from '@/components/features/LoyaltyPointsDisplay.vue'
 
 const error = ref(null);
 
 // User data (mocked)
-const rewardPoints = ref(150)
 const username = ref('Madhu Bikram')
 
 // Search and Filtering

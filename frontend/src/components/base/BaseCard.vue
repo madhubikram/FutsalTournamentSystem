@@ -18,8 +18,9 @@
       </span>
 
       <div v-if="showAdminControls"
-           class="absolute top-4 left-4 flex gap-2">
+       class="absolute top-4 left-4 flex gap-2">
         <button
+          v-if="showEditButton"
           @click.stop="$emit('edit-item')"
           class="p-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg
                   backdrop-blur-sm transition-all duration-200 hover:scale-105"
@@ -87,6 +88,10 @@ defineProps({
   showAdminControls: {
     type: Boolean,
     default: false
+  },
+  showEditButton: {
+    type: Boolean,
+    default: true
   },
   detailsButtonText: {
     type: String,

@@ -1,3 +1,6 @@
+require('./models/booking.model'); 
+require('./models/loyalty.model');
+
 const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
@@ -11,6 +14,9 @@ const protectedRoutes = require('./routes/protected.routes');
 const futsalRoutes = require('./routes/futsal.routes');
 const courtRoutes = require('./routes/court.routes');
 const tournamentRoutes = require(path.join(__dirname, 'routes', 'tournament.routes.js'));
+const authMiddleware = require('./middleware/auth.middleware');
+const validateLoyaltyTransaction = require('./middleware/loyalty.middleware');
+const loyaltyRoutes = require('./routes/loyalty.routes');
 const { updateTournamentStatuses } = require('./utils/tournamentStatus');
 
 require('dotenv').config();
@@ -21,6 +27,7 @@ console.log('Starting server...');
 const uploadDir = path.join(__dirname, 'uploads');
 const courtsUploadsDir = path.join(uploadDir, 'courts');
 const tournamentsUploadsDir = path.join(uploadDir, 'tournaments');
+
 
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -72,6 +79,9 @@ app.use('/api/player/courts', playerCourtRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/futsal', futsalRoutes);
 app.use('/api/tournaments', tournamentRoutes); 
+app.use('/api/loyalty', authMiddleware);
+app.use('/api/loyalty', validateLoyaltyTransaction);
+app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api', protectedRoutes);
 
 // Test Routes (development only)
@@ -95,6 +105,25 @@ if (process.env.NODE_ENV !== 'production') {
         });
         res.json(routes);
     });
+
+    app.get('/debug/loyalty', async (req, res) => {
+        try {
+            const Loyalty = require('./models/loyalty.model');
+            const stats = await Loyalty.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        totalPoints: { $sum: '$points' },
+                        averagePoints: { $avg: '$points' },
+                        totalUsers: { $count: {} }
+                    }
+                }
+            ]);
+            res.json(stats[0]);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
 }
 
 // Error handling middleware
@@ -111,6 +140,21 @@ app.use((err, req, res, next) => {
     if (err.name === 'ValidationError') {
         return res.status(400).json({
             message: 'Validation error',
+            error: err.message
+        });
+    }
+
+    // Add these loyalty-specific error handlers
+    if (err.name === 'InsufficientPointsError') {
+        return res.status(400).json({
+            message: 'Insufficient loyalty points',
+            error: err.message
+        });
+    }
+
+    if (err.name === 'PointsRedemptionError') {
+        return res.status(400).json({
+            message: 'Points redemption failed',
             error: err.message
         });
     }
@@ -146,12 +190,25 @@ mongoose.connect(process.env.MONGODB_URI)
 mongoose.connection.on('connected', async () => {
     try {
         const User = require('./models/user.model');
+        const Loyalty = require('./models/loyalty.model');
         const pendingAdmins = await User.find({
             role: 'futsalAdmin',
             verificationStatus: 'pending'
         });
+
+        const usersWithoutLoyalty = await User.find({
+            loyalty: { $exists: false },
+            role: 'player'
+        });
+
+        for (const user of usersWithoutLoyalty) {
+            const loyalty = new Loyalty({ user: user._id });
+            await loyalty.save();
+            await User.findByIdAndUpdate(user._id, { loyalty: loyalty._id });
+        }
         console.log('Current pending admins:', pendingAdmins.length);
+        console.log('Loyalty records initialized for new users');
     } catch (err) {
-        console.error('Error checking pending admins:', err);
+        console.error('Error in database initialization:', err);
     }
 });

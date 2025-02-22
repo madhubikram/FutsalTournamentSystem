@@ -20,24 +20,25 @@
       v-else
       class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6"
     >
-      <BaseCard
-        v-for="tournament in tournaments"
-        :key="tournament.id"
-        :item-type="'Tournament'"
-        :image-src="tournament.banner
-                    ? `http://localhost:5000${tournament.banner}`
-                    : '/placeholder-tournament.jpg'"
-        :image-alt="tournament.name"
-        :status="tournament.status"
-        :title="tournament.name"
-        :show-admin-controls="true"
-        :details-button-text="'View Details'"
-        :status-color-class="statusColorClass(tournament.status)"
-        :status-dot-class="statusDotClass(tournament.status)"
-        @edit-item="editTournament(tournament)"
-        @delete-item="deleteTournament(tournament)"
-        @view-details="viewTournament(tournament)"
-      >
+    <BaseCard
+      v-for="tournament in tournaments"
+      :key="tournament.id"
+      :item-type="'Tournament'"
+      :image-src="tournament.banner
+                  ? `http://localhost:5000${tournament.banner}`
+                  : '/placeholder-tournament.jpg'"
+      :image-alt="tournament.name"
+      :status="tournament.status"
+      :title="tournament.name"
+      :show-admin-controls="true"
+      :show-edit-button="tournament.status !== 'Completed'"
+      :details-button-text="'View Details'"
+      :status-color-class="statusColorClass(tournament.status)"
+      :status-dot-class="statusDotClass(tournament.status)"
+      @edit-item="editTournament(tournament)"
+      @delete-item="deleteTournament(tournament)"
+      @view-details="viewTournament(tournament)"
+    >
         <template #tournament-details>
           <div class="space-y-3">
             <p class="text-gray-400 text-sm mb-4">{{ tournament.description }}</p>
@@ -307,23 +308,24 @@
     </template>
 
     <template #footer>
-      <div class="flex justify-end space-x-3">
-        <button
-          @click="closeCreateTournamentModal"
-          class="px-4 py-2 text-gray-400 hover:text-white rounded-lg transition-colors duration-200"
-        >
-          Cancel
-        </button>
-        <button
-          @click="handleCreateTournament"
-          :disabled="isSubmitting"
-          class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-200"
-        >
-          <Loader2Icon v-if="isSubmitting" class="animate-spin w-4 h-4" />
-          {{ editingTournamentId ? 'Save Changes' : 'Create Tournament' }}
-        </button>
-      </div>
-    </template>
+  <div class="flex justify-end space-x-3">
+    <button
+      @click="closeCreateTournamentModal"
+      class="px-4 py-2 text-gray-400 hover:text-white rounded-lg transition-colors duration-200"
+    >
+      Cancel
+    </button>
+    <button
+      type="submit" 
+      @click.prevent="handleCreateTournament"
+      :disabled="isSubmitting"
+      class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors duration-200"
+    >
+      <Loader2Icon v-if="isSubmitting" class="animate-spin w-4 h-4" />
+      {{ editingTournamentId ? 'Save Changes' : 'Create Tournament' }}
+    </button>
+  </div>
+</template>
   </BaseModal>
 
   <BaseModal v-if="showViewModal" @close="showViewModal = false">
@@ -529,6 +531,8 @@ const statusDotClass = (status) => {
 
 // Methods
 const resetForm = () => {
+  editingTournamentId.value = null;
+  selectedTournament.value = null;
   tournamentForm.value = {
     name: '',
     description: '',
@@ -545,11 +549,10 @@ const resetForm = () => {
     registrationFee: 0,
     prizePool: 0,
     rules: ''
-  }
-  tournamentImages.value = []
-  errors.value = {}
-  editingTournamentId.value = null
-}
+  };
+  tournamentImages.value = [];
+  errors.value = {};
+};
 
 const handleImageError = (error) => {
   console.error('Image upload error:', error)
@@ -557,14 +560,14 @@ const handleImageError = (error) => {
 }
 
 const openCreateTournamentModal = () => {
-  editingTournamentId.value = null
-  showCreateTournamentModal.value = true
-}
+  resetForm(); // Reset form first
+  showCreateTournamentModal.value = true;
+};
 
 const closeCreateTournamentModal = () => {
-  showCreateTournamentModal.value = false
-  resetForm()
-}
+  showCreateTournamentModal.value = false;
+  resetForm();
+};
 
 const fetchTournaments = async () => {
   try {
@@ -602,6 +605,7 @@ const fetchTournaments = async () => {
   }
 };
 // Form Validation
+// Form Validation
 const validateForm = () => {
   errors.value = {}
   let isValid = true
@@ -629,8 +633,15 @@ const validateForm = () => {
     errors.value.registrationDeadline = 'Registration deadline must be before start date'
     isValid = false
   }
-  if (new Date(tournamentForm.value.endDate) <= new Date(tournamentForm.value.startDate)) {
-    errors.value.endDate = 'End date must be after start date'
+
+  // Update this condition to allow same-day tournaments
+  const startDate = new Date(tournamentForm.value.startDate)
+  const endDate = new Date(tournamentForm.value.endDate)
+  startDate.setHours(0, 0, 0, 0)
+  endDate.setHours(0, 0, 0, 0)
+  
+  if (endDate < startDate) { // Changed from <= to 
+    errors.value.endDate = 'End date must be on or after start date'
     isValid = false
   }
 
@@ -678,19 +689,28 @@ const updateTournamentStatus = () => {
 
 const handleCreateTournament = async () => {
   try {
-    if (!validateForm()) return;
+    console.log('Starting tournament creation/update...');
+    if (!validateForm()) {
+      console.log('Form validation failed:', errors.value);
+      return;
+    }
 
     isSubmitting.value = true;
     const formData = new FormData();
 
     // Add form fields to FormData
     Object.entries(tournamentForm.value).forEach(([key, value]) => {
-      formData.append(key, value);
+      if (value !== null && value !== undefined) {
+        formData.append(key, value);
+      }
     });
 
-    // Add banner if exists
-    if (tournamentImages.value.length > 0 && tournamentImages.value[0] instanceof File) {
-      formData.append('banner', tournamentImages.value[0]);
+    // Add banner only if it's a File object
+    if (tournamentImages.value.length > 0) {
+      const banner = tournamentImages.value[0];
+      if (banner instanceof File) {
+        formData.append('banner', banner);
+      }
     }
 
     const url = editingTournamentId.value
@@ -698,6 +718,12 @@ const handleCreateTournament = async () => {
       : `${API_URL}/tournaments`;
 
     const method = editingTournamentId.value ? 'PUT' : 'POST';
+
+    console.log('Sending request:', {
+      url,
+      method,
+      editingId: editingTournamentId.value
+    });
 
     const response = await fetch(url, {
       method,
@@ -712,11 +738,13 @@ const handleCreateTournament = async () => {
       throw new Error(error.message || 'Failed to save tournament');
     }
 
+    const result = await response.json();
+    console.log('Tournament saved successfully:', result);
+
     await fetchTournaments();
-    resetForm();
-    showCreateTournamentModal.value = false;
+    closeCreateTournamentModal();
   } catch (error) {
-    console.error('Error creating tournament:', error);
+    console.error('Error saving tournament:', error);
     errors.value.submit = error.message;
   } finally {
     isSubmitting.value = false;
@@ -731,12 +759,29 @@ const viewTournament = (tournament) => {
 const editTournament = (tournament) => {
   editingTournamentId.value = tournament._id;
   selectedTournament.value = tournament;
-  tournamentForm.value = { ...tournament };
-  if (tournament.banner) {
-    tournamentImages.value = [tournament.banner];
-  } else {
-    tournamentImages.value = [];
-  }
+  
+  // Copy tournament data to form
+  tournamentForm.value = {
+    name: tournament.name,
+    description: tournament.description,
+    startDate: tournament.startDate.split('T')[0], // Format date correctly
+    endDate: tournament.endDate.split('T')[0],
+    startTime: tournament.startTime,
+    registrationDeadline: tournament.registrationDeadline.split('T')[0],
+    halfDuration: tournament.halfDuration,
+    breakDuration: tournament.breakDuration,
+    format: tournament.format,
+    maxTeams: tournament.maxTeams,
+    teamSize: tournament.teamSize,
+    substitutes: tournament.substitutes,
+    registrationFee: tournament.registrationFee,
+    prizePool: tournament.prizePool,
+    rules: tournament.rules
+  };
+
+  // Handle banner image
+  tournamentImages.value = tournament.banner ? [tournament.banner] : [];
+  
   showCreateTournamentModal.value = true;
 };
 

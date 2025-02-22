@@ -20,8 +20,16 @@ try {
         auth,
         isFutsalAdmin,
         tournamentUpload.single('banner'),
+        (req, res, next) => {
+          console.log('Tournament creation request received:', {
+            body: req.body,
+            file: req.file,
+            user: req.user
+          });
+          next();
+        },
         tournamentController.createTournament
-    );
+      );
 
     // Get all tournaments for a futsal
     router.get('/',

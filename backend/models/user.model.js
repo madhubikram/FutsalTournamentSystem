@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema({
 futsal: { 
   type: mongoose.Schema.Types.ObjectId,
   ref: 'Futsal'
+},
+loyalty: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'Loyalty'
 }
 });
 

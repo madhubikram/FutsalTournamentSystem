@@ -15,15 +15,24 @@ const deleteFile = async (filePath) => {
 const tournamentController = {
     createTournament: async (req, res) => {
         try {
+            console.log('Creating tournament with data:', {
+                body: req.body,
+                file: req.file,
+                user: req.user
+            });
+
             const tournamentData = {
                 ...req.body,
                 banner: req.file ? `/uploads/tournaments/${req.file.filename}` : null,
                 futsalId: req.user.futsal
-            };
+            }; // This was causing the syntax error
+            
+            console.log('Processed tournament data:', tournamentData);
 
             const tournament = new Tournament(tournamentData);
             await tournament.save();
 
+            console.log('Tournament created successfully:', tournament);
             res.status(201).json(tournament);
         } catch (error) {
             console.error('Error creating tournament:', error);

@@ -134,7 +134,28 @@
               Rs. {{ totalAmount }}
             </span>
           </div>
+          <div v-if="loyaltyPoints > 0" class="mt-4 p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+            <div class="flex justify-between items-center">
+                <div>
+                <p class="text-sm text-purple-300">Available Points</p>
+                <p class="text-lg font-semibold text-purple-400">{{ formattedLoyaltyPoints }}</p>
+                </div>
+                <button
+                @click="showPointsRedemption = true"
+                class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
+                >
+                Use Points
+                </button>
+            </div>
+            </div>
 
+            <!-- Points Redemption Modal -->
+            <PointsRedemptionModal
+            v-if="showPointsRedemption"
+            :booking-amount="totalAmount"
+            @close="showPointsRedemption = false"
+            @redeem="handlePointsRedemption"
+            />
           <!-- Proceed Button -->
           <button
             @click="proceedToBooking"
@@ -155,10 +176,17 @@ import { XCircleIcon } from 'lucide-vue-next'
 import { useTimeFormatting } from '@/composables/useTimeFormatting'
 import { usePriceCalculation } from '@/composables/usePriceCalculation'
 import { useBooking } from '@/composables/useBooking'
+import { useLoyaltyPoints } from '@/composables/useLoyaltyPoints'
+import PointsRedemptionModal from '@/components/features/PointsRedemptionModal.vue'
 
 const { formatTime, formatTimeRange, formatDate } = useTimeFormatting()
 const { isTimeInRange, determineRate } = usePriceCalculation()
 const { generateBookingId } = useBooking()
+const { points: loyaltyPoints, formattedPoints: formattedLoyaltyPoints } = useLoyaltyPoints()
+const showPointsRedemption = ref(false)
+const redeemedPoints = ref(0)
+const remainingAmount = ref(0)
+
 
 const props = defineProps({
   court: {
@@ -200,13 +228,28 @@ const totalAmount = computed(() =>
   selectedTimeSlots.value.reduce((sum, slot) => sum + slot.rate, 0)
 )
 
+const handlePointsRedemption = ({ points, remainingAmount: remaining }) => {
+  redeemedPoints.value = points
+  remainingAmount.value = remaining
+  showPointsRedemption.value = false
+}
+
 const proceedToBooking = () => {
+  // Validate points redemption
+  if (redeemedPoints.value > loyaltyPoints.value) {
+    console.error('Attempted to redeem more points than available')
+    return
+  }
+
   emit('proceed-booking', {
-    bookingId: generateBookingId(), // Use the composable function here
+    bookingId: generateBookingId(),
     date: selectedDate.value,
     slots: selectedTimeSlots.value,
     totalAmount: totalAmount.value,
-    duration: `${selectedTimeSlots.value.length} hour(s)`
+    duration: `${selectedTimeSlots.value.length} hour(s)`,
+    redeemedPoints: redeemedPoints.value,
+    remainingAmount: remainingAmount.value || totalAmount.value, 
+    pointsDiscount: redeemedPoints.value 
   })
 }
 // Methods

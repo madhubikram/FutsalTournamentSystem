@@ -119,12 +119,19 @@ const previewUrls = computed(() => {
 
 // Function to get preview URL for a file
 const getPreviewUrl = (file) => {
-  if (!filePreviewMap.value.has(file)) {
-    const url = URL.createObjectURL(file)
-    filePreviewMap.value.set(file, url)
+  // Check if file is a string (URL) or File object
+  if (typeof file === 'string') {
+    // If it's already a URL, return it directly
+    return `http://localhost:5000${file}`;
   }
-  return filePreviewMap.value.get(file)
-}
+
+  // For File objects, create object URL
+  if (!filePreviewMap.value.has(file)) {
+    const url = URL.createObjectURL(file);
+    filePreviewMap.value.set(file, url);
+  }
+  return filePreviewMap.value.get(file);
+};
 
 // Modified showImagePreview function
 const showImagePreview = (url) => {
