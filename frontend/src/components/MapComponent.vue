@@ -1,3 +1,5 @@
+//D:\Islington\Sem 5\FYP\Development\FutNet\frontend\src\components\MapComponent.vue
+
 <template>
   <div class="relative w-full h-full">
     <LMap
@@ -6,22 +8,22 @@
       :center="center"
       :use-global-leaflet="false"
       class="h-full w-full"
-      @click="handleMapClick"
+       @click="!readonly && handleMapClick"
     >
       <LTileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         :attribution="attribution"
       />
 
-      <div class="absolute top-4 right-4 z-[1001] w-64">
-        <div class="relative">
-          <input
-            type="text"
-            v-model="searchQuery"
-            @input="handleSearch"
-            placeholder="Search location..."
-            class="search-input"
-          />
+      <div class="absolute top-4 right-4 z-[1001] w-64" v-if="!props.hideSearch">
+      <div class="relative">
+        <input
+          type="text"
+          v-model="searchQuery"
+          @input="handleSearch"
+          placeholder="Search location..."
+          class="search-input"
+              />
           <div 
             v-if="searchResults.length > 0" 
             class="search-results"
@@ -39,16 +41,16 @@
       </div>
 
       <LMarker
-        v-if="markerPosition"
-        :lat-lng="markerPosition"
-        draggable
-        @dragend="handleMarkerDragend"
+      v-if="markerPosition || readonly"
+      :lat-lng="readonly ? [props.initialLocation.lat, props.initialLocation.lng] : markerPosition"
+      :draggable="!readonly"
+      @dragend="!readonly && handleMarkerDragend"
       >
         <LPopup>
           <div class="popup-content">
-            <p class="font-medium">Selected Location</p>
+            <p class="font-medium">{{ readonly ? 'Tournament Location' : 'Selected Location' }}</p>
             <p class="text-sm mt-1">{{ selectedLocation?.address }}</p>
-          </div>
+        </div>
         </LPopup>
       </LMarker>
     </LMap>
@@ -60,17 +62,22 @@ import { ref, onMounted, watch } from 'vue'
 import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet"
 import "leaflet/dist/leaflet.css"
 import debounce from 'lodash/debounce'
-
 const props = defineProps({
   initialLocation: {
     type: Object,
+    required: true,
     default: () => ({ lat: 27.7172, lng: 85.3240 })
   },
   readonly: {
     type: Boolean,
     default: false
+  },
+  hideSearch: {
+    type: Boolean,
+    default: false
   }
 })
+
 
 const emit = defineEmits(['location-selected'])
 

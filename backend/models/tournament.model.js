@@ -93,4 +93,12 @@ const tournamentSchema = new mongoose.Schema({
     timestamps: true
 });
 
+tournamentSchema.methods.toJSON = function() {
+    const obj = this.toObject();
+    if (obj.startDate) obj.startDate = obj.startDate.toISOString().split('T')[0];
+    if (obj.endDate) obj.endDate = obj.endDate.toISOString().split('T')[0];
+    if (obj.registrationDeadline) obj.registrationDeadline = obj.registrationDeadline.toISOString().split('T')[0];
+    return obj;
+};
+
 module.exports = mongoose.model('Tournament', tournamentSchema);

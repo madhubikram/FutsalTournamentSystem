@@ -94,7 +94,26 @@ const router = createRouter({
         requiresAuth: true,
         roles: ['player']
       }
-    }    
+    },
+    {
+      path: '/tournaments',
+      name: 'tournaments',
+      component: () => import('@/views/PlayerTourny.vue'),
+      meta: { 
+        requiresAuth: true,
+        roles: ['player']
+      }
+    },
+    {
+      path: '/tournaments/:id',
+      name: 'tournament-details',
+      component: () => import('@/views/PlayerTournyDetails.vue'),
+      props: true,
+      meta: { 
+        requiresAuth: true,
+        roles: ['player']
+      }
+    }     
     
   ]
 })

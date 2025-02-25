@@ -8,6 +8,7 @@ const cors = require('cors');
 const fs = require('fs');
 
 // Import routes
+const playerTournamentRoutes = require('./routes/tournament.player.routes');
 const playerCourtRoutes = require('./routes/playerCourt.routes');
 const authRoutes = require('./routes/auth.routes');
 const protectedRoutes = require('./routes/protected.routes');
@@ -18,6 +19,8 @@ const authMiddleware = require('./middleware/auth.middleware');
 const validateLoyaltyTransaction = require('./middleware/loyalty.middleware');
 const loyaltyRoutes = require('./routes/loyalty.routes');
 const { updateTournamentStatuses } = require('./utils/tournamentStatus');
+
+
 
 require('dotenv').config();
 
@@ -78,11 +81,13 @@ app.use('/api/courts', courtRoutes);
 app.use('/api/player/courts', playerCourtRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/futsal', futsalRoutes);
+app.use('/api/player/tournaments', playerTournamentRoutes);
 app.use('/api/tournaments', tournamentRoutes); 
 app.use('/api/loyalty', authMiddleware);
 app.use('/api/loyalty', validateLoyaltyTransaction);
 app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api', protectedRoutes);
+
 
 // Test Routes (development only)
 if (process.env.NODE_ENV !== 'production') {
@@ -120,6 +125,40 @@ if (process.env.NODE_ENV !== 'production') {
                 }
             ]);
             res.json(stats[0]);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+    app.get('/debug/tournaments', async (req, res) => {
+        try {
+            const Tournament = require('./models/tournament.model');
+            const tournaments = await Tournament.find().populate('futsalId');
+            res.json({
+                count: tournaments.length,
+                tournaments
+            });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+    app.get('/debug/create-test-tournament', async (req, res) => {
+        try {
+            const Tournament = require('./models/tournament.model');
+            const testTournament = new Tournament({
+                name: 'Test Tournament',
+                description: 'Test Description',
+                startDate: new Date(),
+                endDate: new Date(Date.now() + 86400000), // tomorrow
+                startTime: '10:00',
+                registrationDeadline: new Date(),
+                maxTeams: 8,
+                format: 'single',
+                entryFee: 1000,
+                prizePool: 10000,
+                futsalId: '...your test futsal id...' // Add a valid futsal ID
+            });
+            await testTournament.save();
+            res.json(testTournament);
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
