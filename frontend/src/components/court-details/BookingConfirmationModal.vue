@@ -42,6 +42,52 @@
           </div>
         </div>
 
+        <div v-if="!requiresPrepayment && !bookingDetails.requiresPayment" class="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mt-4">
+          <div class="flex items-center gap-2">
+            <CheckCircleIcon class="w-5 h-5 text-green-400" />
+            <p class="text-green-400">You're using your free booking slots. Your booking will be confirmed immediately.</p>
+          </div>
+        </div>
+
+        <!-- Payment required message -->
+        <div v-if="!requiresPrepayment && bookingDetails.requiresPayment" class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mt-4">
+          <p class="text-yellow-400 text-sm mb-2">
+            <strong>Note:</strong> This is currently a demonstration. In the production version, payment would be required for bookings beyond your free slots.
+          </p>
+          <p class="text-gray-300">
+            For demonstration purposes, all bookings will be processed as free.
+          </p>
+        </div>
+
+        <!-- Free Slots Usage Info -->
+        <div v-if="!requiresPrepayment && !bookingDetails.requiresPayment" class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+          <p class="text-blue-400 text-sm">
+            You're using your free booking slots. No payment required.
+          </p>
+        </div>
+
+         <!-- Payment Required Info -->
+         <div v-if="!requiresPrepayment && bookingDetails.requiresPayment" class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+          <p class="text-yellow-400 text-sm">
+            You've used all your free slots. Payment is required for this booking.
+          </p>
+          <div class="mt-4">
+            <h4 class="font-medium text-white mb-2">Payment Options</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <button 
+                class="p-3 border border-blue-500/30 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+              >
+                Pay with eSewa
+              </button>
+              <button 
+                class="p-3 border border-purple-500/30 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"
+              >
+                Pay with Khalti
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Prepayment Info -->
         <div v-if="requiresPrepayment" class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
           <p class="text-yellow-400 text-sm">
@@ -69,6 +115,13 @@
           Payment Required (Coming Soon)
         </button>
         <button
+          v-else-if="bookingDetails.requiresPayment"
+          disabled
+          class="px-6 py-2 bg-gray-600 text-white rounded-lg opacity-50 cursor-not-allowed"
+        >
+          Please Select Payment Method
+        </button>
+        <button
           v-else
           @click="onConfirmBooking"
           :disabled="isProcessing"
@@ -85,7 +138,7 @@
 
 <script setup>
 import BaseModal from '@/components/BaseModal.vue'
-import { Loader2Icon } from 'lucide-vue-next'
+import { Loader2Icon, CheckCircleIcon  } from 'lucide-vue-next'
 import { useTimeFormatting } from '@/composables/useTimeFormatting'
 const { formatTime, formatDate } = useTimeFormatting()
 
@@ -109,4 +162,5 @@ const emit = defineEmits(['close', 'confirm-booking'])
 // Event handlers
 const onClose = () => emit('close')
 const onConfirmBooking = () => emit('confirm-booking')
+
 </script>

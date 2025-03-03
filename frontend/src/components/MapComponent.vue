@@ -1,5 +1,3 @@
-//D:\Islington\Sem 5\FYP\Development\FutNet\frontend\src\components\MapComponent.vue
-
 <template>
   <div class="relative w-full h-full">
     <LMap
@@ -8,7 +6,7 @@
       :center="center"
       :use-global-leaflet="false"
       class="h-full w-full"
-       @click="!readonly && handleMapClick"
+      @click="!readonly && handleMapClick"
     >
       <LTileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -16,14 +14,14 @@
       />
 
       <div class="absolute top-4 right-4 z-[1001] w-64" v-if="!props.hideSearch">
-      <div class="relative">
-        <input
-          type="text"
-          v-model="searchQuery"
-          @input="handleSearch"
-          placeholder="Search location..."
-          class="search-input"
-              />
+        <div class="relative">
+          <input
+            type="text"
+            v-model="searchQuery"
+            @input="handleSearch"
+            placeholder="Search location..."
+            class="search-input"
+          />
           <div 
             v-if="searchResults.length > 0" 
             class="search-results"
@@ -40,17 +38,44 @@
         </div>
       </div>
 
+      <!-- Regular location marker -->
       <LMarker
-      v-if="markerPosition || readonly"
-      :lat-lng="readonly ? [props.initialLocation.lat, props.initialLocation.lng] : markerPosition"
-      :draggable="!readonly"
-      @dragend="!readonly && handleMarkerDragend"
+        v-if="markerPosition || readonly"
+        :lat-lng="readonly ? [props.initialLocation.lat, props.initialLocation.lng] : markerPosition"
+        :draggable="!readonly"
+        @dragend="!readonly && handleMarkerDragend"
       >
         <LPopup>
           <div class="popup-content">
             <p class="font-medium">{{ readonly ? 'Tournament Location' : 'Selected Location' }}</p>
             <p class="text-sm mt-1">{{ selectedLocation?.address }}</p>
-        </div>
+          </div>
+        </LPopup>
+      </LMarker>
+      
+      <!-- Futsal Markers -->
+      <LMarker
+        v-for="futsal in props.futsals"
+        :key="futsal.id"
+        :lat-lng="[futsal.coordinates.lat, futsal.coordinates.lng]"
+        @click="handleFutsalClick(futsal)"
+      >
+        <LIcon :icon-url="getFutsalIcon(futsal)" :icon-size="[32, 32]" />
+        <LPopup>
+          <div class="popup-content">
+            <p class="font-medium">{{ futsal.futsalName }}</p>
+            <p class="text-sm mt-1">{{ futsal.location }}</p>
+            <div class="flex items-center mt-2">
+              <StarIcon class="w-4 h-4 text-yellow-400" />
+              <span class="text-xs ml-1">{{ futsal.rating }} · {{ futsal.courts.length }} courts</span>
+            </div>
+            <button 
+              @click="$emit('futsal-selected', futsal)" 
+              class="mt-2 px-3 py-1 bg-green-500 text-white text-sm rounded"
+            >
+              View Details
+            </button>
+          </div>
         </LPopup>
       </LMarker>
     </LMap>
@@ -59,13 +84,14 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet"
+import { LMap, LTileLayer, LMarker, LPopup, LIcon } from "@vue-leaflet/vue-leaflet"
 import "leaflet/dist/leaflet.css"
 import debounce from 'lodash/debounce'
+import { StarIcon } from 'lucide-vue-next'
+
 const props = defineProps({
   initialLocation: {
     type: Object,
-    required: true,
     default: () => ({ lat: 27.7172, lng: 85.3240 })
   },
   readonly: {
@@ -75,11 +101,14 @@ const props = defineProps({
   hideSearch: {
     type: Boolean,
     default: false
+  },
+  futsals: {
+    type: Array,
+    default: () => []
   }
 })
 
-
-const emit = defineEmits(['location-selected'])
+const emit = defineEmits(['location-selected', 'futsal-selected'])
 
 const zoom = ref(15)
 const center = ref([props.initialLocation.lat, props.initialLocation.lng])
@@ -88,6 +117,12 @@ const selectedLocation = ref(null)
 const searchQuery = ref('')
 const searchResults = ref([])
 const attribution = '© OpenStreetMap contributors'
+
+// Generate a custom icon URL for futsals based on their rating
+const getFutsalIcon = (futsal) => {
+  const rating = Math.round(futsal.rating);
+  return `/futsal-marker-${rating || 3}.svg`; // Fallback to 3-star icon
+};
 
 const handleMapClick = (event) => {
   if (props.readonly) return
@@ -104,6 +139,11 @@ const handleMarkerDragend = (event) => {
   center.value = [lat, lng]
   updateSelectedLocation(lat, lng)
 }
+
+const handleFutsalClick = (futsal) => {
+  // This will be handled by the LPopup click event
+  console.log('Futsal clicked:', futsal.futsalName);
+};
 
 const updateSelectedLocation = async (lat, lng) => {
   try {
@@ -157,6 +197,16 @@ watch(() => props.initialLocation, (newLocation) => {
   markerPosition.value = [newLocation.lat, newLocation.lng]
 }, { deep: true })
 
+watch(() => props.futsals, (newFutsals) => {
+  if (newFutsals.length > 0) {
+    // Center map on the first futsal if available
+    const firstFutsal = newFutsals[0];
+    if (firstFutsal.coordinates) {
+      center.value = [firstFutsal.coordinates.lat, firstFutsal.coordinates.lng];
+    }
+  }
+}, { deep: true });
+
 onMounted(() => {
   if (props.initialLocation) {
     updateSelectedLocation(props.initialLocation.lat, props.initialLocation.lng)
@@ -175,18 +225,15 @@ onMounted(() => {
 
 .leaflet-tile {
   filter: 
-    brightness(0.7)
-    contrast(1.1)
+    brightness(0.6)
+    contrast(1.2)
     saturate(1.3)
     hue-rotate(10deg);
 }
 
 .leaflet-marker-icon {
   filter: 
-    hue-rotate(150deg)
-    saturate(2)
-    brightness(0.9)
-    drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+    drop-shadow(0 3px 5px rgba(0,0,0,0.7));
 }
 
 .leaflet-control-zoom a {
@@ -248,24 +295,37 @@ onMounted(() => {
   .font-medium { @apply text-green-300; }
 }
 
-/* Enhanced feature colors */
-.leaflet-tile-container img {
-  /* Water bodies */
-  &[style*="rgb(170, 211, 223)"],
-  &[style*="rgb(181, 208, 208)"] {
-    filter: hue-rotate(-10deg) saturate(1.8) brightness(1.1);
-  }
+/* Enhanced map styling (continued) */
+.map-container {
+  @apply relative w-full h-full;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2) inset;
+}
 
-  /* Green areas */
-  &[style*="rgb(211, 222, 195)"],
-  &[style*="rgb(205, 221, 195)"] {
-    filter: hue-rotate(10deg) saturate(1.5) brightness(1.05);
-  }
+/* Custom marker styling */
+.custom-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.8) 100%);
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+  border: 2px solid #fff;
+  color: white;
+  font-weight: bold;
+  transform-origin: bottom center;
+  transition: all 0.3s ease;
+}
 
-  /* Roads */
-  &[style*="rgb(255, 255, 255)"],
-  &[style*="rgb(250, 250, 250)"] {
-    filter: contrast(1.3) brightness(0.9);
-  }
+.custom-marker:hover {
+  transform: scale(1.1);
+}
+
+/* Satellite view toggle button */
+.map-type-toggle {
+  @apply absolute bottom-20 right-4 bg-black/70 backdrop-blur-sm text-white 
+         px-3 py-2 rounded-lg border border-gray-700 shadow-lg
+         flex items-center gap-2 text-sm z-[1000] hover:bg-black/90 transition-colors;
 }
 </style>

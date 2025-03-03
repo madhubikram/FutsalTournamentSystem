@@ -1,5 +1,3 @@
-// src/components/court-details/BookingSection.vue
-
 <template>
   <div class="space-y-8">
     <!-- Pricing Information Summary -->
@@ -71,23 +69,63 @@
         @click="toggleTimeSlot(slot)"
         :class="[
           'p-4 rounded-lg text-center transition-all',
-          !slot.available 
-            ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed'
-            : isSlotSelected(slot)
-              ? 'bg-green-500/20 border-2 border-green-500 text-white'
-              : 'bg-gray-800 hover:bg-gray-700 text-white'
+          {
+            'bg-gray-800/50 text-gray-500 cursor-not-allowed': !slot.available,
+            'bg-red-500/20 border border-red-500 text-gray-400 cursor-not-allowed': slot.booked && !slot.yourBooking,
+            'bg-blue-500/20 border border-blue-500 text-white': slot.yourBooking,
+            'bg-green-500/20 border-2 border-green-500 text-white': isSlotSelected(slot) && slot.available,
+            'bg-gray-800 hover:bg-gray-700 text-white': slot.available && !isSlotSelected(slot) && !slot.booked
+          }
         ]"
-        :disabled="!slot.available"
+        :disabled="!slot.available || slot.booked"
       >
         {{ formatTime(slot.time) }}
+        <div v-if="slot.yourBooking" class="mt-1 text-xs text-blue-300">Your booking</div>
       </button>
+    </div>
+
+    <!-- Legend -->
+    <div class="flex flex-wrap gap-4 mt-4 mb-6">
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 bg-gray-800 border border-gray-700 rounded"></div>
+        <span class="text-sm text-gray-400">Available</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 bg-green-500/20 border border-green-500 rounded"></div>
+        <span class="text-sm text-gray-400">Selected</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 bg-red-500/20 border border-red-500 rounded"></div>
+        <span class="text-sm text-gray-400">Booked</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 bg-blue-500/20 border border-blue-500 rounded"></div>
+        <span class="text-sm text-gray-400">Your Booking</span>
+      </div>
+    </div>
+
+    <div v-if="!props.court.requirePrepayment" class="mt-4 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h4 class="text-sm font-medium text-blue-400">Free Booking Slots</h4>
+          <p class="text-xs text-gray-400 mt-1">You get 2 free booking slots for courts without prepayment.</p>
+        </div>
+        <div class="text-right">
+          <p class="text-lg font-semibold text-blue-400">{{ freeBookingsRemaining }}/2</p>
+          <p class="text-xs text-gray-400">remaining free slots</p>
+        </div>
+      </div>
+      <div v-if="freeBookingsRemaining === 0" class="mt-4 text-sm text-yellow-400">
+        <AlertTriangleIcon class="inline-block w-4 h-4 mr-1" />
+        You've used all your free slots. Payment will be required for additional bookings.
+      </div>
     </div>
 
     <!-- Selected Slots Summary -->
     <div v-if="selectedTimeSlots.length > 0" class="mt-8">
       <div class="bg-gray-800 rounded-xl p-6">
         <h3 class="text-lg font-medium text-white mb-4">Selected Time Slots</h3>
-        
+
         <!-- Booking Summary -->
         <div class="space-y-4">
           <div class="bg-gray-700/50 rounded-lg p-4">
@@ -134,35 +172,53 @@
               Rs. {{ totalAmount }}
             </span>
           </div>
+
+          <div v-if="!props.court.requirePrepayment && freeBookingsRemaining > 0" class="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <div class="flex justify-between items-center">
+              <div>
+                <p class="text-sm text-blue-300">Free Slots Available</p>
+                <p class="text-lg font-semibold text-blue-400">{{ freeBookingsRemaining }}</p>
+              </div>
+              <div class="text-sm text-blue-300">
+                <p>You're using free slots</p>
+              </div>
+            </div>
+          </div>
+
           <div v-if="loyaltyPoints > 0" class="mt-4 p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
             <div class="flex justify-between items-center">
-                <div>
+              <div>
                 <p class="text-sm text-purple-300">Available Points</p>
                 <p class="text-lg font-semibold text-purple-400">{{ formattedLoyaltyPoints }}</p>
-                </div>
-                <button
+              </div>
+              <button
                 @click="showPointsRedemption = true"
                 class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
-                >
+              >
                 Use Points
-                </button>
+              </button>
             </div>
-            </div>
+          </div>
 
-            <!-- Points Redemption Modal -->
-            <PointsRedemptionModal
+          <!-- Points Redemption Modal -->
+          <PointsRedemptionModal
             v-if="showPointsRedemption"
             :booking-amount="totalAmount"
             @close="showPointsRedemption = false"
             @redeem="handlePointsRedemption"
-            />
+          />
+
           <!-- Proceed Button -->
           <button
             @click="proceedToBooking"
-            class="w-full px-6 py-3 bg-green-500 text-white rounded-lg font-medium 
-                  hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+            class="w-full px-6 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
           >
-            Proceed to Booking
+            <span v-if="exceedsFreeSlots && !props.court.requirePrepayment">
+              Proceed to Payment
+            </span>
+            <span v-else>
+              Proceed to Booking
+            </span>
           </button>
         </div>
       </div>
@@ -171,8 +227,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { XCircleIcon } from 'lucide-vue-next'
+import { ref, computed, watch, onMounted } from 'vue'
+import { XCircleIcon, AlertTriangleIcon  } from 'lucide-vue-next'
 import { useTimeFormatting } from '@/composables/useTimeFormatting'
 import { usePriceCalculation } from '@/composables/usePriceCalculation'
 import { useBooking } from '@/composables/useBooking'
@@ -183,10 +239,13 @@ const { formatTime, formatTimeRange, formatDate } = useTimeFormatting()
 const { isTimeInRange, determineRate } = usePriceCalculation()
 const { generateBookingId } = useBooking()
 const { points: loyaltyPoints, formattedPoints: formattedLoyaltyPoints } = useLoyaltyPoints()
+
 const showPointsRedemption = ref(false)
 const redeemedPoints = ref(0)
 const remainingAmount = ref(0)
-
+// Removed unused freeSlotCount and selectedFreeSlotsCount
+const freeBookingsRemaining = ref(2);
+const exceedsFreeSlots = computed(() => selectedTimeSlots.value.length > freeBookingsRemaining.value);
 
 const props = defineProps({
   court: {
@@ -194,6 +253,11 @@ const props = defineProps({
     required: true
   }
 })
+
+onMounted(async () => {
+  await fetchFreeSlots();
+  await generateTimeSlots();
+});
 
 const emit = defineEmits(['proceed-booking'])
 
@@ -235,12 +299,11 @@ const handlePointsRedemption = ({ points, remainingAmount: remaining }) => {
 }
 
 const proceedToBooking = () => {
-  // Validate points redemption
-  if (redeemedPoints.value > loyaltyPoints.value) {
-    console.error('Attempted to redeem more points than available')
-    return
-  }
-
+  // For courts without prepayment, determine if this should be a free booking
+  const isFreeBooking = !props.court.requirePrepayment && 
+                        !exceedsFreeSlots.value && 
+                        freeBookingsRemaining.value >= selectedTimeSlots.value.length;
+  
   emit('proceed-booking', {
     bookingId: generateBookingId(),
     date: selectedDate.value,
@@ -248,48 +311,108 @@ const proceedToBooking = () => {
     totalAmount: totalAmount.value,
     duration: `${selectedTimeSlots.value.length} hour(s)`,
     redeemedPoints: redeemedPoints.value,
-    remainingAmount: remainingAmount.value || totalAmount.value, 
-    pointsDiscount: redeemedPoints.value 
-  })
-}
-// Methods
+    remainingAmount: remainingAmount.value || totalAmount.value,
+    pointsDiscount: redeemedPoints.value,
+    requiresPayment: !isFreeBooking, // Require payment if not free booking
+    isFreeBooking: isFreeBooking   // Flag to indicate if this is a free booking
+  });
+};
+
+const fetchFreeSlots = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('http://localhost:5000/api/bookings/free-slots', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      freeBookingsRemaining.value = data.freeBookingsRemaining || 0;
+    }
+  } catch (error) {
+    console.error('Error fetching free slots:', error);
+  }
+};
 
 const generateTimeSlots = async () => {
-  const { opening, closing } = props.court.futsalId?.operatingHours || {}
+  const { opening, closing } = props.court.futsalId?.operatingHours || {};
   if (!opening || !closing) {
-    availableTimeSlots.value = []
-    return
+    availableTimeSlots.value = [];
+    return;
   }
 
-  const slots = []
-  let currentTime = opening
+  const slots = [];
+  let currentTime = opening;
+  
+  // Get current date and time
+  const now = new Date();
+  const todayString = now.toISOString().split('T')[0];
+  const currentHour = now.getHours();
+  const currentMinutes = now.getMinutes();
+  const isToday = selectedDate.value === todayString;
+  
+  // Fetch existing bookings for this court on this date
+  const token = localStorage.getItem('token');
+  const userId = localStorage.getItem('userId');
+  let existingBookings = [];
+  
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/courts/${props.court._id}/bookings?date=${selectedDate.value}`,
+      {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }
+    );
+    
+    if (response.ok) {
+      existingBookings = await response.json();
+    }
+  } catch (error) {
+    console.error('Error fetching existing bookings:', error);
+  }
 
   while (currentTime < closing) {
     try {
-      // In a real implementation, this would check availability with the backend
-      const isAvailable = true // Placeholder for backend check
-      const rate = determineRate(props.court, currentTime) // Fix: Pass court object as first parameter
+      // Check if time slot is already booked
+      const isBooked = existingBookings.some(booking => 
+        booking.startTime === currentTime && booking.status !== 'cancelled'
+      );
+      
+      // Check if this time is in the past (for today only)
+      const [hours, minutes] = currentTime.split(':').map(Number);
+      const isPastTime = isToday && (hours < currentHour || (hours === currentHour && minutes < currentMinutes));
+      
+      // Check if it's booked by the current user
+      const isYourBooking = existingBookings.some(booking => 
+        booking.startTime === currentTime && 
+        booking.status !== 'cancelled' && 
+        booking.user === userId
+      );
+      
+      const rate = determineRate(props.court, currentTime);
 
       slots.push({
         time: currentTime,
-        available: isAvailable,
-        rate: Number(rate) // Fix: Ensure rate is a number
-      })
+        available: !isBooked && !isPastTime,
+        booked: isBooked,
+        yourBooking: isYourBooking,
+        isPastTime: isPastTime,
+        rate: Number(rate)
+      });
     } catch (error) {
-      console.error('Error checking slot availability:', error)
+      console.error('Error checking slot availability:', error);
     }
 
     // Increment time by 1 hour
-    const [hours, minutes] = currentTime.split(':').map(Number)
-    const totalMinutes = hours * 60 + minutes + 60
-    const newHours = Math.floor(totalMinutes / 60)
-    const newMinutes = totalMinutes % 60
-    currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`
+    const [hours, minutes] = currentTime.split(':').map(Number);
+    const totalMinutes = hours * 60 + minutes + 60;
+    const newHours = Math.floor(totalMinutes / 60);
+    const newMinutes = totalMinutes % 60;
+    currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
   }
 
-
-  availableTimeSlots.value = slots
-}
+  availableTimeSlots.value = slots;
+};
 
 const toggleTimeSlot = (slot) => {
   if (!slot.available) return
@@ -305,8 +428,13 @@ const toggleTimeSlot = (slot) => {
 const isSlotSelected = (slot) => {
   return selectedTimeSlots.value.some(s => s.time === slot.time)
 }
+
 // Watch for date changes to regenerate time slots
 watch(selectedDate, generateTimeSlots)
+
+watch(selectedTimeSlots, () => {
+  console.log(`Selected slots: ${selectedTimeSlots.value.length}, Free bookings remaining: ${freeBookingsRemaining.value}`);
+}, { deep: true });
 
 // Initialize time slots when component mounts
 generateTimeSlots()
