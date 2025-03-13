@@ -2,7 +2,7 @@
   <div class="min-h-screen py-8 flex items-center justify-center relative overflow-hidden">
     <div
       class="absolute inset-0 bg-cover bg-center bg-no-repeat"
-      style="background-image: url('/src/assets/image (1).jpg'); filter: blur(4px); background-attachment: fixed;"  ></div>
+      style="background-image: url('/background.jpg'); filter: blur(4px); background-attachment: fixed;"  ></div>
     <div class="absolute inset-0 bg-black/50"></div>
 
     <div class="w-full max-w-[95%] sm:max-w-[85%] md:max-w-2xl relative z-10 my-4">

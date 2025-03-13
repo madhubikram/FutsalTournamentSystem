@@ -4,6 +4,7 @@ const auth = require('../middleware/auth.middleware');
 const Court = require('../models/court.model');
 const multer = require('multer');
 const path = require('path');
+const Booking = require('../models/booking.model');
 const mongoose = require('mongoose');
 
 
@@ -47,12 +48,12 @@ router.get('/', auth, async (req, res) => {
         // If user is a futsal admin, show only their courts
         if (req.user.role === 'futsalAdmin') {
             courts = await Court.find({ futsalId: req.user.futsal })
-                               .populate('futsalId', 'name location');
+                               .populate('futsalId', 'name location coordinates operatingHours');
         } 
         // If user is a player, show all active courts
         else {
             courts = await Court.find({ status: 'Active' })
-                               .populate('futsalId', 'name location');
+                               .populate('futsalId', 'name location coordinates operatingHours');
         }
         
         console.log('Found courts:', courts);
@@ -230,6 +231,37 @@ router.get('/:id', auth, verifyMongoose, async (req, res) => {
     }
 });
 
+router.get('/:id/bookings', auth, async (req, res) => {
+    try {
+      const { date } = req.query;
+      
+      if (!date) {
+        return res.status(400).json({ message: 'Date is required' });
+      }
+      
+      // Parse the date
+      const bookingDate = new Date(date);
+      
+      // Get all bookings for this court on this date
+      const bookings = await Booking.find({
+        court: req.params.id,
+        date: {
+          $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
+          $lt: new Date(bookingDate.setHours(23, 59, 59, 999))
+        },
+        status: { $ne: 'cancelled' }
+      });
+      
+      res.json(bookings);
+      
+    } catch (error) {
+      console.error('Error fetching court bookings:', error);
+      res.status(500).json({
+        message: 'Failed to fetch court bookings',
+        error: error.message
+      });
+    }
+  });
 
 
 // Update a court

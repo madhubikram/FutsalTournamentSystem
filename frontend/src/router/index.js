@@ -113,6 +113,42 @@ const router = createRouter({
         requiresAuth: true,
         roles: ['player']
       }
+    },
+    {
+      path: '/favorites',
+      name: 'favorites',
+      component: () => import('@/views/PlayerFav.vue'),
+      meta: { 
+        requiresAuth: true,
+        roles: ['player']
+      }
+    },
+    {
+      path: '/bookings',
+      name: 'bookings',
+      component: () => import('@/views/PlayerBooking.vue'),
+      meta: { 
+        requiresAuth: true,
+        roles: ['player']
+      }
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('@/views/PlayerProfile.vue'),
+      meta: { 
+        requiresAuth: true,
+        roles: ['player']
+      }
+    },
+    {
+      path: '/map',
+      name: 'map',
+      component: () => import('@/views/PlayerMap.vue'),
+      meta: {
+        requiresAuth: true,
+        roles: ['player']
+      }
     }     
     
   ]

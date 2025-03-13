@@ -95,7 +95,7 @@ const isCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true')
 
 const links = [
   { to: '/home', label: 'Home', icon: HomeIcon },
-  { to: '/favorite', label: 'Favorite', icon: HeartIcon },
+  { to: '/favorites', label: 'Favorites', icon: HeartIcon },
   { to: '/bookings', label: 'Bookings', icon: CalendarIcon },
   { to: '/tournaments', label: 'Tournaments', icon: TrophyIcon },
   { to: '/profile', label: 'Profile', icon: UserIcon }

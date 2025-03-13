@@ -96,7 +96,7 @@ import { useTimeFormatting } from '@/composables/useTimeFormatting'
 const { formatTimeRange } = useTimeFormatting()
 import { 
   RulerIcon, UsersIcon, ClockIcon,
-  CheckCircleIcon, XCircleIcon 
+  CheckCircleIcon, XCircleIcon, LayersIcon, HomeIcon 
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -112,6 +112,16 @@ const courtDetails = computed(() => [
     label: 'Dimensions',
     value: props.court.dimensions,
     icon: RulerIcon
+  },
+  {
+    label: 'Surface Type',
+    value: props.court.surfaceType || 'Not specified',
+    icon: LayersIcon  // Add this import
+  },
+  {
+    label: 'Court Type',
+    value: props.court.courtType || 'Not specified',
+    icon: HomeIcon  // Add this import
   },
   {
     label: 'Player Side',

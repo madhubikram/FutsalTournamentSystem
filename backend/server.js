@@ -18,6 +18,7 @@ const tournamentRoutes = require(path.join(__dirname, 'routes', 'tournament.rout
 const authMiddleware = require('./middleware/auth.middleware');
 const validateLoyaltyTransaction = require('./middleware/loyalty.middleware');
 const loyaltyRoutes = require('./routes/loyalty.routes');
+const bookingRoutes = require('./routes/booking.routes');
 const { updateTournamentStatuses } = require('./utils/tournamentStatus');
 
 
@@ -57,7 +58,7 @@ app.use(cors({
         'https://192.168.1.70:4173'
       ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -86,6 +87,7 @@ app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/loyalty', authMiddleware);
 app.use('/api/loyalty', validateLoyaltyTransaction);
 app.use('/api/loyalty', loyaltyRoutes);
+app.use('/api/bookings', bookingRoutes);
 app.use('/api', protectedRoutes);
 
 

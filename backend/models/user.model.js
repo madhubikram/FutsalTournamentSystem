@@ -12,6 +12,10 @@ const userSchema = new mongoose.Schema({
   panNumber: { type: String, required: function() { return this.role === 'futsalAdmin'; } },
   documents: [{ type: String }],
   createdAt: { type: Date, default: Date.now },
+  freeBookingsUsed: { 
+    type: Number, 
+    default: 0 
+  },
   futsalName: { 
     type: String, 
     required: function() { 

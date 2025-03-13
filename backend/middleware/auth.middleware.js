@@ -28,12 +28,19 @@ const authMiddleware = async (req, res, next) => {
     }
 
     // Add check for futsal admin without futsal
-    if (user.role === 'futsalAdmin' && !user.futsal && 
-      req.path !== '/profile') { // Allow profile completion route
-    return res.status(400).json({ 
-      message: 'Futsal profile not found. Please complete your profile setup.' 
-    });
-  }
+    if (user.role === 'futsalAdmin' && !user.futsal) { 
+      // Allow profile-related routes needed for profile completion
+      const profileEndpoints = ['/profile', '/futsal/profile'];
+      const isAllowedProfileRoute = profileEndpoints.some(endpoint => 
+        req.path === endpoint || req.originalUrl.endsWith(endpoint)
+      );
+      
+      if (!isAllowedProfileRoute) {
+        return res.status(400).json({ 
+          message: 'Futsal profile not found. Please complete your profile setup.' 
+        });
+      }
+    }
     // Attach user and token to request
     req.user = user;
     req.token = token;

@@ -13,12 +13,62 @@ router.get('/test-protected', (req, res) => {
 
 // Get user profile
 router.get('/profile', auth, async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id).select('-password');
-        res.json({ user });
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching profile', error: error.message });
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    res.json({ user });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching profile', error: error.message });
+  }
+});
+
+// Update user profile
+router.put('/profile', auth, async (req, res) => {
+  try {
+    const { firstName, lastName, username, email, contactNumber } = req.body;
+    
+    // Check for email/username uniqueness if they've changed
+    if (username !== req.user.username || email !== req.user.email || contactNumber !== req.user.contactNumber) {
+      const existingUser = await User.findOne({
+        $and: [
+          { _id: { $ne: req.user._id } },
+          {
+            $or: [
+              { username },
+              { email },
+              { contactNumber }
+            ]
+          }
+        ]
+      });
+      
+      if (existingUser) {
+        let errorMessage = '';
+        if (existingUser.email === email) {
+          errorMessage = 'Email already exists';
+        } else if (existingUser.username === username) {
+          errorMessage = 'Username already exists';
+        } else if (existingUser.contactNumber === contactNumber) {
+          errorMessage = 'Contact number already registered';
+        }
+        return res.status(400).json({ message: errorMessage });
+      }
     }
+    
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { firstName, lastName, username, email, contactNumber },
+      { new: true }
+    ).select('-password');
+    
+    res.json({ 
+      message: 'Profile updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Error updating profile', error: error.message });
+  }
 });
 
 // Get pending verifications

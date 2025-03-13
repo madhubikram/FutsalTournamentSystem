@@ -75,19 +75,19 @@
       </div>
     </div>
     <!-- PREPAYMENT LABEL -->
-      <div
-        class="px-3 py-1 text-xs font-medium"
-        :class="futsal.prepaymentRequired ? 'text-yellow-400' : 'text-gray-400'"
-      >
-        <span v-if="futsal.prepaymentRequired">Prepayment Required</span>
-        <span v-else>No Prepayment Required</span>
-      </div>
+    <div
+      class="px-3 py-1 text-xs font-medium"
+      :class="futsal.prepaymentRequired ? 'text-yellow-400' : 'text-gray-400'"
+    >
+      <span v-if="futsal.prepaymentRequired">Prepayment Required</span>
+      <span v-else>No Prepayment Required</span>
+    </div>
 
     <!-- PRICING & BOOKING SECTION -->
     <div class="p-2 bg-gray-800/95">
       <div class="grid grid-cols-2 gap-2">
         <!-- CURRENT RATE -->
-        <div
+        <div v-if="isWithinOperatingHours"
           class="price-box-sm bg-gradient-to-br from-green-500/20 to-green-600/10 border border-green-400/30"
         >
           <div class="flex justify-between items-start mb-0.5">
@@ -100,6 +100,16 @@
           </div>
           <div class="text-base font-bold text-green-400">
             Rs. {{ getCurrentPrice }}
+          </div>
+        </div>
+        <div v-else
+          class="price-box-sm bg-gray-700/50 border border-gray-600/20"
+        >
+          <div class="flex justify-between items-start mb-0.5">
+            <span class="text-[0.6rem] text-gray-400">No Current Rate</span>
+          </div>
+          <div class="text-xs text-gray-400">
+            Opens at {{ formatTimeForDisplay(futsal.operatingHours?.opening) }}
           </div>
         </div>
 
@@ -145,6 +155,22 @@
           </div>
         </div>
       </div>
+      
+      <!-- AVAILABILITY SECTION - FIXED VERSION -->
+      <div class="mt-2 px-2 pb-2">
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-gray-400">Availability Today:</span>
+          <span 
+            v-if="futsal.availableSlots && Array.isArray(futsal.availableSlots) && futsal.availableSlots.length > 0" 
+            class="text-xs text-green-400"
+          >
+            {{ futsal.availableSlots.length }} slot{{ futsal.availableSlots.length !== 1 ? 's' : '' }} available
+          </span>
+          <span v-else class="text-xs text-yellow-400">
+            No slots available
+          </span>
+        </div>
+      </div>
 
       <!-- BOOK NOW BUTTON -->
       <button
@@ -159,7 +185,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { StarIcon, MapPinIcon, HeartIcon, CalendarIcon } from 'lucide-vue-next'
 
@@ -173,6 +199,20 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['book', 'toggleFavorite'])
+
+// Log availability information for debugging
+onMounted(() => {
+  if (props.futsal) {
+    console.log(`[${props.futsal.futsalName} / ${props.futsal.courtName}] Availability Debug:`, {
+      hasAvailableSlots: props.futsal.availableSlots && Array.isArray(props.futsal.availableSlots),
+      totalSlots: props.futsal.availableSlots ? props.futsal.availableSlots.length : 0,
+      operatingHours: {
+        opening: props.futsal.peakHours?.start,
+        closing: props.futsal.peakHours?.end
+      }
+    });
+  }
+});
 
 // Format time range (Peak / Off-Peak Hours)
 const formatTimeRange = (startTime, endTime) => {
@@ -192,6 +232,26 @@ const formatTimeRange = (startTime, endTime) => {
 
   return `${formattedStartTime} - ${formattedEndTime}`
 }
+
+// Format time function
+const formatTime = (time) => {
+  if (!time) return '';
+  
+  try {
+    // Get hours and minutes
+    const [hours, minutes] = time.split(':').map(Number);
+    
+    // Convert to 12-hour format
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12; // Convert 0 to 12
+    
+    // Format with leading zeros and return
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  } catch (error) {
+    console.error('Error formatting time:', error, time);
+    return time; // Return as-is if there's an error
+  }
+};
 
 // Example of dynamic current rate (could be more complex logic)
 const getCurrentPrice = computed(() => {
@@ -219,27 +279,98 @@ const getCurrentPrice = computed(() => {
   return props.futsal.regularPrice;
 });
 
+const isWithinOperatingHours = computed(() => {
+  const now = new Date();
+  const currentTime = now.toTimeString().slice(0, 5); // Format: HH:mm
+  
+  // First check if we have direct operatingHours
+  if (props.futsal.operatingHours) {
+    const openingTime = props.futsal.operatingHours.opening;
+    const closingTime = props.futsal.operatingHours.closing;
+    
+    if (openingTime && closingTime) {
+      console.log(`[${props.futsal.futsalName}] Real operating hours: ${openingTime}-${closingTime}`);
+      console.log(`Checking if current time (${currentTime}) is within range`);
+      const result = isTimeInRange(currentTime, openingTime, closingTime);
+      console.log(`[${props.futsal.futsalName}] Operating hours check result: ${result}`);
+      return result;
+    }
+  }
+  
+  // Fallback to checking if current time is within any time range (peak or off-peak)
+  if (props.futsal.peakHours?.start && props.futsal.peakHours?.end) {
+    const isPeakHour = isTimeInRange(currentTime, props.futsal.peakHours.start, props.futsal.peakHours.end);
+    if (isPeakHour) return true;
+  }
+  
+  if (props.futsal.offPeakHours?.start && props.futsal.offPeakHours?.end) {
+    const isOffPeakHour = isTimeInRange(currentTime, props.futsal.offPeakHours.start, props.futsal.offPeakHours.end);
+    if (isOffPeakHour) return true;
+  }
+  
+  return false;
+});
+
+const formatTimeForDisplay = (time) => {
+  // If no time is provided, try to find it from operatingHours
+  if (!time) {
+    // Get opening time from operatingHours
+    let openingTime = props.futsal.operatingHours?.opening;
+    
+    console.log(`[${props.futsal.futsalName}] Getting opening time:`, {
+      providedTime: time,
+      operatingHours: props.futsal.operatingHours,
+      openingTime
+    });
+
+    if (!openingTime) {
+      console.log(`[${props.futsal.futsalName}] No opening time found`);
+      return 'N/A';
+    }
+    
+    return formatTime(openingTime);
+  }
+  
+  return formatTime(time);
+};
 
 const isTimeInRange = (currentTime, start, end) => {
-  if (!start || !end) return false;
+  if (!start || !end) {
+    console.log('Missing start or end time');
+    return false;
+  }
   
-  const timeToMinutes = (time) => {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
-  };
+  try {
+    const timeToMinutes = (time) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
 
-  const current = timeToMinutes(currentTime);
-  const startTime = timeToMinutes(start);
-  const endTime = timeToMinutes(end);
+    const current = timeToMinutes(currentTime);
+    const startTime = timeToMinutes(start);
+    const endTime = timeToMinutes(end);
+    
+    console.log(`Time range check: ${current} in [${startTime}, ${endTime}]`);
 
-  return current >= startTime && current <= endTime;
+    // Handle cases where operating hours span midnight
+    if (startTime > endTime) {
+      // e.g., 22:00 to 02:00 - check if current time is after start OR before end
+      return current >= startTime || current <= endTime;
+    } else {
+      // Normal case - check if current time is between start and end
+      return current >= startTime && current <= endTime;
+    }
+  } catch (error) {
+    console.error('Error in time range check:', error);
+    return false;
+  }
 };
 
 // Navigate to futsal details page
 const navigateToDetails = () => {
   console.log('Navigating to court details:', props.futsal.id)
   router.push({
-    name: 'playerCourtDetails', // Changed from 'futsalDetails' to 'playerCourtDetails'
+    name: 'playerCourtDetails',
     params: { id: props.futsal.id.toString() }
   })
 }

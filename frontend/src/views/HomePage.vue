@@ -63,10 +63,14 @@
             <span class="text-sm md:text-base">Filter</span>
           </button>
 
-                    <button class="hidden md:flex h-8 px-2 py-1 md:px-4 md:py-2 bg-gray-800 text-white rounded-lg items-center space-x-2 hover:bg-gray-700">
+          <button 
+            @click="navigateToMapView"
+            class="hidden md:flex h-8 px-2 py-1 md:px-4 md:py-2 bg-gray-800 text-white rounded-lg items-center space-x-2 hover:bg-gray-700"
+          >
             <MapIcon class="w-4 h-4" />
             <span class="text-sm md:text-base">Maps</span>
           </button>
+
         </div>
       </div>
     </div>
@@ -121,8 +125,10 @@
       </div>
     </div>
 
-        <button
-      class="fixed bottom-16 inset-x-0 mx-auto bg-green-500 text-white p-4 rounded-full shadow-lg animate-heartbeat md:hidden w-14 h-14 flex items-center justify-center">
+    <button
+        @click="navigateToMapView"
+      class="fixed bottom-16 inset-x-0 mx-auto bg-green-500 text-white p-4 rounded-full shadow-lg animate-heartbeat md:hidden w-14 h-14 flex items-center justify-center"
+    >
       <MapIcon class="w-6 h-6" />
     </button>
   </PageLayout>
@@ -130,6 +136,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted  } from 'vue'
+import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import FutsalCard from '@/components/features/FutsalCard.vue'
 import {BellIcon, FilterIcon, MapIcon, ArrowUpDownIcon
@@ -137,7 +144,7 @@ import {BellIcon, FilterIcon, MapIcon, ArrowUpDownIcon
 import LoyaltyPointsDisplay from '@/components/features/LoyaltyPointsDisplay.vue'
 
 const error = ref(null);
-
+const router = useRouter();
 // User data (mocked)
 const username = ref('Madhu Bikram')
 
@@ -167,18 +174,39 @@ const sortBy = (field) => {
   isShowingSortOptions.value = false // Close sort options after selection
 }
 
-// Booking handler (mocked)
 const handleBooking = (futsal) => {
   console.log('Booking futsal:', futsal.name)
-  // In a real app, you would implement booking logic here
+  router.push({
+    name: 'playerCourtDetails',
+    params: { id: futsal.id.toString() }
+  });
 }
 
 // Favorite toggle handler
 const toggleFavorite = (futsal) => {
+  // Toggle the isFavorite property in the UI
   const foundFutsal = futsals.value.find(f => f.id === futsal.id)
   if (foundFutsal) {
-    foundFutsal.isFavorite = !foundFutsal.isFavorite;
-    // In a real app, you might want to persist this to local storage or a database
+    foundFutsal.isFavorite = !foundFutsal.isFavorite
+    
+    // Get current favorites from localStorage
+    const favorites = JSON.parse(localStorage.getItem('favoriteCourts')) || []
+    
+    if (foundFutsal.isFavorite) {
+      // Add to favorites if not already present
+      if (!favorites.includes(futsal.id)) {
+        favorites.push(futsal.id)
+      }
+    } else {
+      // Remove from favorites
+      const index = favorites.indexOf(futsal.id)
+      if (index > -1) {
+        favorites.splice(index, 1)
+      }
+    }
+    
+    // Update localStorage
+    localStorage.setItem('favoriteCourts', JSON.stringify(favorites))
   }
 }
 
@@ -197,22 +225,34 @@ const filteredFutsals = computed(() => {
 
   // Apply sorting
   result.sort((a, b) => {
-    const modifier = sortOption.value.direction === 'asc' ? 1 : -1;
-    if (sortOption.value.field === 'name') {
-      return modifier * a.name.localeCompare(b.name);
-    } else {
-      return modifier * (a.regularPrice - b.regularPrice); // Sort by price
-    }
-  });
+  const modifier = sortOption.value.direction === 'asc' ? 1 : -1;
+  if (sortOption.value.field === 'name') {
+    // Access the correct property name and handle undefined values
+    const nameA = a.futsalName || a.courtName || '';
+    const nameB = b.futsalName || b.courtName || '';
+    return modifier * nameA.localeCompare(nameB);
+  } else {
+    // Ensure these values exist with fallbacks to 0
+    const priceA = a.regularPrice || 0;
+    const priceB = b.regularPrice || 0;
+    return modifier * (priceA - priceB);
+  }
+});
 
   return result;
 })
+
+const navigateToMapView = () => {
+  router.push('/map');
+};
 
 const fetchCourts = async () => {
   try {
     loading.value = true;
     error.value = null;
     
+    const favorites = JSON.parse(localStorage.getItem('favoriteCourts')) || []
+
     const token = localStorage.getItem('token');
     const response = await fetch('http://localhost:5000/api/courts', {
       headers: {
@@ -226,30 +266,31 @@ const fetchCourts = async () => {
 
     const courts = await response.json();
     
+    console.log("Raw court data from server:");
+    courts.forEach(court => {
+      console.log(`Court ${court.name} (${court._id}):`, {
+        futsalId: court.futsalId,
+        operatingHours: court.futsalId?.operatingHours,
+        hasOperatingHours: !!court.futsalId?.operatingHours
+      });
+    });
+    
     futsals.value = courts.map(court => {
       // Get current time to check if we're in peak/off-peak hours
       const now = new Date();
       const currentTime = now.toTimeString().slice(0, 5); // Format: HH:mm
-
-      // Add debugging logs
-      console.log('Court:', court.name);
-      console.log('Current time:', currentTime);
-      console.log('Peak hours:', court.peakHours);
-      console.log('Has peak hours:', court.hasPeakHours);
-
+      
       // Start with the base hourly price set by admin
       let currentRate = court.priceHourly;
       
       // Check if current time is in peak hours
       if (court.hasPeakHours) {
         const isPeakHour = isTimeInRange(currentTime, court.peakHours.start, court.peakHours.end);
-        console.log('Is peak hour:', isPeakHour);
         if (isPeakHour) {
           currentRate = court.pricePeakHours;
         }
       }
 
-      // Check if current time is in off-peak hours
       if (court.hasOffPeakHours) {
         const isOffPeakHour = isTimeInRange(currentTime, court.offPeakHours.start, court.offPeakHours.end);
         if (isOffPeakHour) {
@@ -257,23 +298,51 @@ const fetchCourts = async () => {
         }
       }
 
-      console.log('Regular price:', court.priceHourly);
-      console.log('Current rate:', currentRate);
-
       // Extract full location and format it
       const fullLocation = court.futsalId?.location || '';
       const [area, city = 'Kathmandu'] = fullLocation.split(',').map(part => part.trim());
       const formattedLocation = `${area}, ${city}`;
 
+      // Get available slots for today
+      let availableSlots = [];
+      
+      // Use court operating hours to generate potential slots
+      if (court.futsalId?.operatingHours) {
+        const { opening, closing } = court.futsalId.operatingHours;
+        
+        availableSlots = generateTimeSlots(opening, closing);
+        
+        console.log(`Court ${court.name || 'Unknown'} (${court._id}) availability:`, {
+          operatingHours: court.futsalId?.operatingHours,
+          availableSlots: availableSlots.length,
+          currentTime: new Date().toLocaleTimeString()
+        });
+      }
+
+
+      console.log(`Court ${court.name || 'Unknown'} (${court._id}) availability:`, {
+        operatingHours: court.futsalId?.operatingHours,
+        totalGeneratedSlots: availableSlots.length, // Changed from allSlots.length
+        availableSlots: availableSlots.length,
+        currentTime: new Date().toLocaleTimeString(),
+        currentHour: new Date().getHours(),
+        currentMinute: new Date().getMinutes()
+      });
+
+      if (availableSlots.length === 0) {
+        console.log("All slots are in the past or already booked.");
+      }
+      
       return {
         id: court._id,
         futsalName: court.futsalId?.name || 'Unknown Futsal',
         courtName: court.name,
         location: formattedLocation,
-        rating: 4.5,
+        rating: court.averageRating || 0,
         distance: '2.5',
         courtSide: court.courtSide,
-        regularPrice: court.priceHourly, // Changed this to use currentRate
+        regularPrice: court.priceHourly,
+        currentRate: currentRate,
         peakPrice: court.pricePeakHours || 0,
         offPeakPrice: court.priceOffPeakHours || 0,
         currentlyPeakHours: court.hasPeakHours && 
@@ -288,12 +357,20 @@ const fetchCourts = async () => {
           start: court.offPeakHours.start,
           end: court.offPeakHours.end
         } : null,
-        isFavorite: false,
+        // Make sure to include the operating hours
+        operatingHours: court.futsalId?.operatingHours || {
+          opening: '09:00', // Default only if no operatingHours exists
+          closing: '21:00'
+        },
+        isFavorite: favorites.includes(court._id),
         images: court.images?.map(img => `http://localhost:5000${img}`) || [],
-        prepaymentRequired: court.requirePrepayment || false
+        prepaymentRequired: court.requirePrepayment || false,
+        availableSlots: court.futsalId?.operatingHours ? 
+    generateTimeSlots(court.futsalId.operatingHours.opening, court.futsalId.operatingHours.closing) :
+    generateTimeSlots(court.peakHours?.start || '17:00', court.peakHours?.end || '20:00')
+        
       };
     });
-
   } catch (error) {
     console.error('Error fetching courts:', error);
     error.value = 'Failed to load courts';
@@ -301,6 +378,68 @@ const fetchCourts = async () => {
     loading.value = false;
   }
 };
+
+// Helper function to generate time slots
+// In the fetchCourts function in HomePage.vue, update the generateTimeSlots function:
+const generateTimeSlots = (opening, closing) => {
+  if (!opening || !closing) {
+    console.warn('Missing opening or closing time for slot generation');
+    return [];
+  }
+  
+  // Parse opening and closing times to minutes since midnight
+  const openingMinutes = timeToMinutes(opening);
+  const closingMinutes = timeToMinutes(closing);
+  
+  if (isNaN(openingMinutes) || isNaN(closingMinutes)) {
+    console.error('Invalid time format', { opening, closing });
+    return [];
+  }
+  
+  console.log(`Generating slots from ${opening} (${openingMinutes} mins) to ${closing} (${closingMinutes} mins)`);
+  
+  const slots = [];
+  let currentMinutes = openingMinutes;
+  
+  // Get current time to filter out past slots
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTotalMinutes = currentHour * 60 + currentMinute;
+  
+  // Generate slots every hour (60 minutes)
+  while (currentMinutes < closingMinutes) {
+    // Convert minutes back to HH:MM format
+    const hours = Math.floor(currentMinutes / 60);
+    const minutes = currentMinutes % 60;
+    const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    
+    // Only add future slots for today
+    if (currentMinutes > currentTotalMinutes) {
+      slots.push(timeStr);
+      console.log(`Added slot: ${timeStr}`);
+    } else {
+      console.log(`Skipped past slot: ${timeStr}`);
+    }
+    
+    // Move forward 60 minutes
+    currentMinutes += 60;
+  }
+  
+  console.log(`Generated ${slots.length} slots for ${opening} to ${closing}`);
+  return slots;
+};
+
+const timeToMinutes = (time) => {
+  if (!time) return NaN;
+  
+  const [hours, minutes] = time.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return NaN;
+  
+  return hours * 60 + minutes;
+};
+
+
 // Call fetchCourts when component mounts
 onMounted(fetchCourts)
 
@@ -319,9 +458,14 @@ const isTimeInRange = (currentTime, start, end) => {
   const startTime = timeToMinutes(start);
   const endTime = timeToMinutes(end);
 
-  console.log(`Time check: ${current} >= ${startTime} && ${current} <= ${endTime}`);
-  
-  return current >= startTime && current <= endTime;
+  // Handle cases where operating hours span midnight
+  if (startTime > endTime) {
+    // e.g., 22:00 to 02:00 - check if current time is after start OR before end
+    return current >= startTime || current <= endTime;
+  } else {
+    // Normal case - check if current time is between start and end
+    return current >= startTime && current <= endTime;
+  }
 };
 
 const totalPages = computed(() => {

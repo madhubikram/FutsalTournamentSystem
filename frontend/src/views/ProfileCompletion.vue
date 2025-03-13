@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNotification } from '@/composables/useNotification'
 import { BaseButton } from '@/components/base'
@@ -195,6 +195,22 @@ const handleSubmit = async () => {
     isSubmitting.value = false
   }
 }
+
+onMounted(() => {
+  // Pre-populate the selected location with the initial values
+  selectedLocation.value = {
+    lat: initialLocation.lat,
+    lng: initialLocation.lng,
+    address: "Loading address..." // Will be updated when the map loads
+  }
+  
+  // Also initialize the form data location
+  formData.value.location = {
+    lat: initialLocation.lat,
+    lng: initialLocation.lng,
+    address: "Loading address..."
+  }
+})
 </script>
 <style scoped>
 /* You can add additional custom styles here if needed */
